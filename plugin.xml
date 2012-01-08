@@ -4,7 +4,7 @@
 	<name>Call Logging</name>
 	<description>Track phone calls in the helpdesk</description>
 	<author>WebGroup Media, LLC.</author>
-	<version>1.0.1</version>
+	<version>1.0.2</version>
 	<link>https://github.com/cerb5-plugins/cerberusweb.calls</link>
 	<image>plugin.png</image>
 	
