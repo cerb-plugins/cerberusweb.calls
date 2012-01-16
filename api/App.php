@@ -2,7 +2,7 @@
 /***********************************************************************
 | Cerberus Helpdesk(tm) developed by WebGroup Media, LLC.
 |-----------------------------------------------------------------------
-| All source code & content (c) Copyright 2011, WebGroup Media LLC
+| All source code & content (c) Copyright 2012, WebGroup Media LLC
 |   unless specifically noted otherwise.
 |
 | This source code is released under the Devblocks Public License.
@@ -299,6 +299,7 @@ class CallsPage extends CerberusPageExtension {
 		// Scheduled behavior
 		@$behavior_id = DevblocksPlatform::importGPC($_POST['behavior_id'],'string','');
 		@$behavior_when = DevblocksPlatform::importGPC($_POST['behavior_when'],'string','');
+		@$behavior_params = DevblocksPlatform::importGPC($_POST['behavior_params'],'array',array());
 		
 		$do = array();
 		
@@ -311,6 +312,7 @@ class CallsPage extends CerberusPageExtension {
 			$do['behavior'] = array(
 				'id' => $behavior_id,
 				'when' => $behavior_when,
+				'params' => $behavior_params,
 			);
 		}
 		

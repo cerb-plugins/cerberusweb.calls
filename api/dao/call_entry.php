@@ -2,7 +2,7 @@
 /***********************************************************************
 | Cerberus Helpdesk(tm) developed by WebGroup Media, LLC.
 |-----------------------------------------------------------------------
-| All source code & content (c) Copyright 2011, WebGroup Media LLC
+| All source code & content (c) Copyright 2012, WebGroup Media LLC
 |   unless specifically noted otherwise.
 |
 | This source code is released under the Devblocks Public License.
@@ -671,6 +671,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 			if(isset($do['behavior']) && is_array($do['behavior'])) {
 				$behavior_id = $do['behavior']['id'];
 				@$behavior_when = strtotime($do['behavior']['when']) or time();
+				@$behavior_params = isset($do['behavior']['params']) ? $do['behavior']['params'] : array();
 				
 				if(!empty($batch_ids) && !empty($behavior_id))
 				foreach($batch_ids as $batch_id) {
@@ -679,6 +680,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 						DAO_ContextScheduledBehavior::CONTEXT => CerberusContexts::CONTEXT_CALL,
 						DAO_ContextScheduledBehavior::CONTEXT_ID => $batch_id,
 						DAO_ContextScheduledBehavior::RUN_DATE => $behavior_when,
+						DAO_ContextScheduledBehavior::VARIABLES_JSON => json_encode($behavior_params),
 					));
 				}
 			}
