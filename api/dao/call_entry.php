@@ -778,6 +778,10 @@ class Context_Call extends Extension_DevblocksContext {
 					}
 				}
 			}
+			
+			// Watchers
+			$watchers = CerberusContexts::getWatchers(CerberusContexts::CONTEXT_CALL, $call->id, true);
+			$token_values['watchers'] = $watchers;
 		}
 		
 		// Person

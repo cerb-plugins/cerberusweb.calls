@@ -91,6 +91,10 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 				'label' => 'Call',
 				'context' => CerberusContexts::CONTEXT_CALL,
 			),
+			'call_watchers' => array(
+				'label' => 'Call watchers',
+				'context' => CerberusContexts::CONTEXT_WORKER,
+			),
 		);
 		
 		$vars = parent::getValuesContexts($trigger);
