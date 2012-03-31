@@ -213,10 +213,6 @@ class DAO_CallEntry extends C4_ORMHelper {
 	}	
 	
 	private static function _translateVirtualParameters($param, $key, &$args) {
-		$join_sql =& $args['join_sql'];
-		$where_sql =& $args['where_sql']; 
-		$has_multiple_values =& $args['has_multiple_values'];
-
 		if(!is_a($param, 'DevblocksSearchCriteria'))
 			return;
 		
@@ -224,11 +220,11 @@ class DAO_CallEntry extends C4_ORMHelper {
 		settype($param_key, 'string');
 		switch($param_key) {
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
-				$has_multiple_values = true;
+				$args['has_multiple_values'] = true;
 				$from_context = 'cerberusweb.contexts.call';
 				$from_index = 'c.id';
 				
-				self::_searchComponentsVirtualWatchers($param, $from_context, $from_index, $join_sql, $where_sql);
+				self::_searchComponentsVirtualWatchers($param, $from_context, $from_index, $args['join_sql'], $args['where_sql']);
 				break;
 		}
 	}
@@ -367,7 +363,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 		$translate = DevblocksPlatform::getTranslationService();
 		
 		$this->id = self::DEFAULT_ID;
-		$this->name = $translate->_('common.search_results');
+		$this->name = $translate->_('calls.activity.tab');
 		$this->renderLimit = 10;
 		$this->renderSortBy = SearchFields_CallEntry::CREATED_DATE;
 		$this->renderSortAsc = false;
@@ -450,10 +446,6 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 			return array();
 		
 		switch($column) {
-//			case SearchFields_CallEntry::EXAMPLE:
-//				$counts = $this->_getSubtotalCountForStringColumn('DAO_CallEntry', $column);
-//				break;
-
 			case SearchFields_CallEntry::IS_CLOSED:
 			case SearchFields_CallEntry::IS_OUTGOING:
 				$counts = $this->_getSubtotalCountForBooleanColumn('DAO_CallEntry', $column);
@@ -544,22 +536,11 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 		$values = !is_array($param->value) ? array($param->value) : $param->value;
 
 		switch($field) {
-//			case SearchFields_CallEntry::WORKER_ID:
-//				$workers = DAO_Worker::getAll();
-//				$strings = array();
-//
-//				foreach($values as $val) {
-//					if(0==$val) {
-//						$strings[] = "Nobody";
-//					} else {
-//						if(!isset($workers[$val]))
-//							continue;
-//						$strings[] = $workers[$val]->getName();
-//					}
-//				}
-//				echo implode(", ", $strings);
-//				break;
-
+			case SearchFields_CallEntry::IS_CLOSED:
+			case SearchFields_CallEntry::IS_OUTGOING:
+				$this->_renderCriteriaParamBoolean($param);
+				break;
+			
 			default:
 				parent::renderCriteriaParam($param);
 				break;
@@ -576,12 +557,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 		switch($field) {
 			case SearchFields_CallEntry::SUBJECT:
 			case SearchFields_CallEntry::PHONE:
-				// force wildcards if none used on a LIKE
-				if(($oper == DevblocksSearchCriteria::OPER_LIKE || $oper == DevblocksSearchCriteria::OPER_NOT_LIKE)
-				&& false === (strpos($value,'*'))) {
-					$value = $value.'*';
-				}
-				$criteria = new DevblocksSearchCriteria($field, $oper, $value);
+				$criteria = $this->_doSetCriteriaString($field, $oper, $value);
 				break;
 			
 			case SearchFields_CallEntry::IS_CLOSED:
@@ -592,22 +568,19 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 				
 			case SearchFields_CallEntry::CREATED_DATE:
 			case SearchFields_CallEntry::UPDATED_DATE:
-				@$from = DevblocksPlatform::importGPC($_REQUEST['from'],'string','');
-				@$to = DevblocksPlatform::importGPC($_REQUEST['to'],'string','');
-
-				if(empty($from)) $from = 0;
-				if(empty($to)) $to = 'today';
-
-				$criteria = new DevblocksSearchCriteria($field,$oper,array($from,$to));
+				$criteria = $this->_doSetCriteriaDate($field, $oper);
 				break;
+				
 			case SearchFields_CallEntry::FULLTEXT_COMMENT_CONTENT:
 				@$scope = DevblocksPlatform::importGPC($_REQUEST['scope'],'string','expert');
 				$criteria = new DevblocksSearchCriteria($field,DevblocksSearchCriteria::OPER_FULLTEXT,array($value,$scope));
 				break;
+				
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
 				@$worker_ids = DevblocksPlatform::importGPC($_REQUEST['worker_id'],'array',array());
 				$criteria = new DevblocksSearchCriteria($field,$oper,$worker_ids);
 				break;
+				
 			default:
 				// Custom Fields
 				if(substr($field,0,3)=='cf_') {
