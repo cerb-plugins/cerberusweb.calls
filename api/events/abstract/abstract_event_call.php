@@ -99,13 +99,17 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 		
 		$vars = parent::getValuesContexts($trigger);
 		
-		return array_merge($vals, $vars);
+		$vals_to_ctx = array_merge($vals, $vars);
+		asort($vals_to_ctx);
+		
+		return $vals_to_ctx;
 	}
 	
 	function getConditionExtensions() {
 		$labels = $this->getLabels();
 		
 		$labels['call_link'] = 'Call is linked';
+		$labels['call_watcher_count'] = 'Call watcher count';
 		
 		$types = array(
 			'call_created|date' => Model_CustomField::TYPE_DATE,
@@ -116,6 +120,7 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 			'call_updated|date' => Model_CustomField::TYPE_DATE,
 			
 			'call_link' => null,
+			'call_watcher_count' => null,
 		);
 
 		$conditions = $this->_importLabelsTypesAsConditions($labels, $types);
@@ -135,6 +140,10 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 				$contexts = Extension_DevblocksContext::getAll(false);
 				$tpl->assign('contexts', $contexts);
 				$tpl->display('devblocks:cerberusweb.core::events/condition_link.tpl');
+				break;
+				
+			case 'call_watcher_count':
+				$tpl->display('devblocks:cerberusweb.core::internal/decisions/conditions/_number.tpl');
 				break;
 		}
 
@@ -188,6 +197,26 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 					$pass = false;
 				}
 				
+				break;
+				
+			case 'call_watcher_count':
+				$not = (substr($params['oper'],0,1) == '!');
+				$oper = ltrim($params['oper'],'!');
+				$value = count($dict->call_watchers);
+				
+				switch($oper) {
+					case 'is':
+						$pass = intval($value)==intval($params['value']);
+						break;
+					case 'gt':
+						$pass = intval($value) > intval($params['value']);
+						break;
+					case 'lt':
+						$pass = intval($value) < intval($params['value']);
+						break;
+				}
+				
+				$pass = ($not) ? !$pass : $pass;
 				break;
 				
 			default:
