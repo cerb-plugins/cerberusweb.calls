@@ -40,6 +40,9 @@ class DAO_CallEntry extends C4_ORMHelper {
 	
 	static function update($ids, $fields) {
 		parent::_update($ids, 'call_entry', $fields);
+		
+	    // Log the context update
+   		DevblocksPlatform::markContextChanged(CerberusContexts::CONTEXT_CALL, $ids);
 	}
 	
 	/**
