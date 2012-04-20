@@ -2,13 +2,13 @@
 <input type="hidden" name="c" value="calls">
 <input type="hidden" name="a" value="saveEntry">
 {if !empty($model) && !empty($model->id)}<input type="hidden" name="id" value="{$model->id}">{/if}
-{if empty($id) && !empty($context)}
-<input type="hidden" name="context" value="{$context}">
-<input type="hidden" name="context_id" value="{$context_id}">
+{if !empty($link_context)}
+<input type="hidden" name="link_context" value="{$link_context}">
+<input type="hidden" name="link_context_id" value="{$link_context_id}">
 {/if}
 <input type="hidden" name="do_delete" value="0">
 
-<fieldset>
+<fieldset class="peek">
 	<legend>{'common.properties'|devblocks_translate}</legend>
 
 	<table cellspacing="0" cellpadding="2" border="0" width="98%">
@@ -56,7 +56,7 @@
 </fieldset>
 
 {if !empty($custom_fields)}
-<fieldset>
+<fieldset class="peek">
 	<legend>{'common.custom_fields'|devblocks_translate}</legend>
 	{include file="devblocks:cerberusweb.core::internal/custom_fields/bulk/form.tpl" bulk=false}
 </fieldset>
@@ -67,7 +67,7 @@
 	{include file="devblocks:cerberusweb.core::internal/comments/comment.tpl" readonly=true comment=$last_comment}
 {/if}
 
-<fieldset>
+<fieldset class="peek">
 	<legend>{'common.comment'|devblocks_translate|capitalize}</legend>
 	<textarea name="comment" rows="5" cols="45" style="width:98%;"></textarea>
 	<div class="notify" style="display:none;">

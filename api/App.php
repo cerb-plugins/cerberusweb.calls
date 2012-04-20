@@ -148,41 +148,6 @@ class CallsPage extends CerberusPageExtension {
 	    }
 	}
 	
-	function showEntryAction() {
-		@$id = DevblocksPlatform::importGPC($_REQUEST['id'], 'integer', 0);
-		@$view_id = DevblocksPlatform::importGPC($_REQUEST['view_id'], 'string', '');
-
-		$tpl = DevblocksPlatform::getTemplateService();
-		$tpl->assign('view_id', $view_id);
-		
-		// Handle context links ([TODO] as an optional array)
-		@$context = DevblocksPlatform::importGPC($_REQUEST['context'],'string','');
-		@$context_id = DevblocksPlatform::importGPC($_REQUEST['context_id'],'integer','');
-		$tpl->assign('context', $context);
-		$tpl->assign('context_id', $context_id);
-		
-		if(!empty($id) && null != ($call = DAO_CallEntry::get($id))) {
-			$tpl->assign('model', $call);
-		}
-		
-		$custom_fields = DAO_CustomField::getByContext(CerberusContexts::CONTEXT_CALL);
-		$tpl->assign('custom_fields', $custom_fields);
-		
-		if(!empty($id)) {
-			$custom_field_values = DAO_CustomFieldValue::getValuesByContextIds(CerberusContexts::CONTEXT_CALL, $id);
-			if(isset($custom_field_values[$id]))
-				$tpl->assign('custom_field_values', $custom_field_values[$id]);
-		}
-
-		// Comments
-		$comments = DAO_Comment::getByContext(CerberusContexts::CONTEXT_CALL, $id);
-		$last_comment = array_shift($comments);
-		unset($comments);
-		$tpl->assign('last_comment', $last_comment);
-		
-		$tpl->display('devblocks:cerberusweb.calls::calls/ajax/call_entry_panel.tpl');
-	}
-	
 	function saveEntryAction() {
 		@$view_id = DevblocksPlatform::importGPC($_REQUEST['view_id'], 'string', '');
 		
@@ -216,10 +181,10 @@ class CallsPage extends CerberusPageExtension {
 					CerberusContexts::addWatchers(CerberusContexts::CONTEXT_CALL, $id, $active_worker->id);
 				
 				// Context Link (if given)
-				@$context = DevblocksPlatform::importGPC($_REQUEST['context'],'string','');
-				@$context_id = DevblocksPlatform::importGPC($_REQUEST['context_id'],'integer','');
-				if(!empty($id) && !empty($context) && !empty($context_id)) {
-					DAO_ContextLink::setLink(CerberusContexts::CONTEXT_CALL, $id, $context, $context_id);
+				@$link_context = DevblocksPlatform::importGPC($_REQUEST['link_context'],'string','');
+				@$link_context_id = DevblocksPlatform::importGPC($_REQUEST['link_context_id'],'integer','');
+				if(!empty($id) && !empty($link_context) && !empty($link_context_id)) {
+					DAO_ContextLink::setLink(CerberusContexts::CONTEXT_CALL, $id, $link_context, $link_context_id);
 				}
 				
 			} else { // Edit
@@ -424,34 +389,6 @@ class CallsPage extends CerberusPageExtension {
 		DevblocksPlatform::redirect(new DevblocksHttpResponse(array('explore',$hash,$orig_pos)));
 	}	
 };
-
-if (class_exists('Extension_ActivityTab')):
-class CallsActivityTab extends Extension_ActivityTab {
-	const VIEW_ACTIVITY_CALLS = 'activity_calls';
-	
-	function showTab() {
-		$tpl = DevblocksPlatform::getTemplateService();
-		
-		$defaults = new C4_AbstractViewModel();
-		$defaults->class_name = 'View_CallEntry';
-		$defaults->id = self::VIEW_ACTIVITY_CALLS;
-		$defaults->renderSortBy = SearchFields_CallEntry::UPDATED_DATE;
-		$defaults->renderSortAsc = 0;
-		$defaults->paramsDefault = array(
-			SearchFields_CallEntry::IS_CLOSED => new DevblocksSearchCriteria(SearchFields_CallEntry::IS_CLOSED,DevblocksSearchCriteria::OPER_EQ,0),
-		);
-		
-		if(null == ($view = C4_AbstractViewLoader::getView(self::VIEW_ACTIVITY_CALLS, $defaults))) {
-			$view->name = "Calls";
-			C4_AbstractViewLoader::setView($view->id, $view);
-		}
-
-		$tpl->assign('view', $view);
-		
-		$tpl->display('devblocks:cerberusweb.calls::activity_tab/index.tpl');		
-	}
-};
-endif;
 
 if (class_exists('DevblocksEventListenerExtension')):
 class CallsEventListener extends DevblocksEventListenerExtension {

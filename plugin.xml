@@ -131,20 +131,5 @@
 			</params>
 		</extension>
 		
-		<!-- Activity Tab -->
-		
-		<extension point="cerberusweb.activity.tab">
-			<id>calls.activity.tab</id>
-			<name>Call Logging Tab</name>
-			<class>
-				<file>api/App.php</file>
-				<name>CallsActivityTab</name>
-			</class>
-			<params>
-				<param key="uri" value="calls" />
-				<param key="title" value="calls.activity.tab" />
-			</params>
-		</extension>
-		
 	</extensions>
 </plugin>

@@ -68,7 +68,7 @@
 					<span class="cerb-sprite2 sprite-tick-circle-frame-gray"></span>
 				{/if}
 				<a href="{devblocks_url}c=calls&id={$result.c_id}-{$result.c_subject|devblocks_permalink}{/devblocks_url}" class="subject">{$result.c_subject}</a> 
-				<button type="button" class="peek" style="visibility:hidden;padding:1px;margin:0px 5px;" onclick="genericAjaxPopup('peek','c=calls&a=showEntry&id={$result.c_id}&view_id={$view->id}',null,false,'550');"><span class="cerb-sprite2 sprite-document-search-result" style="margin-left:2px" title="{$translate->_('views.peek')}"></span></button>
+				<button type="button" class="peek" style="visibility:hidden;padding:1px;margin:0px 5px;" onclick="genericAjaxPopup('peek','c=internal&a=showPeekPopup&context={CerberusContexts::CONTEXT_CALL}&context_id={$result.c_id}&view_id={$view->id}',null,false,'550');"><span class="cerb-sprite2 sprite-document-search-result" style="margin-left:2px" title="{$translate->_('views.peek')}"></span></button>
 			</td>
 		</tr>
 		<tr class="{$tableRowClass}">
@@ -81,20 +81,12 @@
 						{$result.$column|devblocks_prettytime}&nbsp;
 					{/if}
 				</td>
-			{elseif $column=="c_is_outgoing"}
+			{elseif $column=="c_is_outgoing" || $column == "c_is_closed"}
 				<td>
 					{if $result.$column}
-						Outgoing
+						{'common.yes'|devblocks_translate|capitalize}
 					{else}
-						Incoming
-					{/if}
-				</td>
-			{elseif $column=="c_is_closed"}
-				<td>
-					{if $result.$column}
-						{'status.open'|devblocks_translate|capitalize}
-					{else}
-						{'status.closed'|devblocks_translate|capitalize}
+						{'common.no'|devblocks_translate|capitalize}
 					{/if}
 				</td>
 			{else}

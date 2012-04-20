@@ -1,12 +1,14 @@
 {$page_context = CerberusContexts::CONTEXT_CALL}
 {$page_context_id = $call->id}
 
-{include file="devblocks:cerberusweb.calls::calls/submenu.tpl"}
+<div style="float:left">
+	<h1>{$call->subject}</h1>
+</div>
 
-<h2>{'calls.common.call'|devblocks_translate|capitalize}</h2> 
+<div style="clear:both;"></div>
 
 <fieldset class="properties">
-	<legend>{$call->subject|truncate:128}</legend>
+	<legend>{'calls.common.call'|devblocks_translate|capitalize}</legend>
 	
 	<form action="{devblocks_url}{/devblocks_url}" onsubmit="return false;" style="margin-bottom:5px;">
 
@@ -90,7 +92,7 @@
 		var tabs = $("#callTabs").tabs( { selected:{$tab_selected_idx} } );
 		
 		$('#btnDisplayCallEdit').bind('click', function() {
-			$popup = genericAjaxPopup('peek','c=calls&a=showEntry&id={$call->id}',null,false,'550');
+			$popup = genericAjaxPopup('peek','c=internal&a=showPeekPopup&context={$page_context}&context_id={$page_context_id}',null,false,'550');
 			$popup.one('call_save', function(event) {
 				event.stopPropagation();
 				document.location.reload();
@@ -98,7 +100,6 @@
 		});
 
 		{include file="devblocks:cerberusweb.core::internal/macros/display/menu_script.tpl"}
-		
 	});
 </script>
 
