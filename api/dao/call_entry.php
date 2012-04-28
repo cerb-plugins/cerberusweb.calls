@@ -696,7 +696,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 	}
 };
 
-class Context_Call extends Extension_DevblocksContext implements IDevblocksContextPeek {
+class Context_Call extends Extension_DevblocksContext implements IDevblocksContextPeek, IDevblocksContextImport {
 	function getRandom() {
 		return DAO_CallEntry::random();
 	}
@@ -805,11 +805,13 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		return $values;
 	}	
 	
-	function getChooserView() {
+	function getChooserView($view_id=null) {
 		$active_worker = CerberusApplication::getActiveWorker();
-		
+
+		if(empty($view_id))
+			$view_id = 'chooser_'.str_replace('.','_',$this->id).time().mt_rand(0,9999);
+	
 		// View
-		$view_id = 'chooser_'.str_replace('.','_',$this->id).time().mt_rand(0,9999);
 		$defaults = new C4_AbstractViewModel();
 		$defaults->id = $view_id;
 		$defaults->is_ephemeral = true;
@@ -886,4 +888,86 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		
 		$tpl->display('devblocks:cerberusweb.calls::calls/ajax/peek.tpl');
 	}
+	
+	function importGetKeys() {
+		// [TODO] Translate
+	
+		$keys = array(
+			'created_date' => array(
+				'label' => 'Created Date',
+				'type' => Model_CustomField::TYPE_DATE,
+				'param' => SearchFields_CallEntry::CREATED_DATE,
+			),
+			'is_closed' => array(
+				'label' => 'Is Closed',
+				'type' => Model_CustomField::TYPE_CHECKBOX,
+				'param' => SearchFields_CallEntry::IS_CLOSED,
+			),
+			'is_outgoing' => array(
+				'label' => 'Is Outgoing',
+				'type' => Model_CustomField::TYPE_CHECKBOX,
+				'param' => SearchFields_CallEntry::IS_OUTGOING,
+			),
+			'phone' => array(
+				'label' => 'Phone',
+				'type' => Model_CustomField::TYPE_SINGLE_LINE,
+				'param' => SearchFields_CallEntry::PHONE,
+				'required' => true,
+			),
+			'subject' => array(
+				'label' => 'Subject',
+				'type' => Model_CustomField::TYPE_SINGLE_LINE,
+				'param' => SearchFields_CallEntry::SUBJECT,
+				'required' => true,
+			),
+			'updated_date' => array(
+				'label' => 'Updated Date',
+				'type' => Model_CustomField::TYPE_DATE,
+				'param' => SearchFields_CallEntry::UPDATED_DATE,
+			),
+		);
+	
+		$cfields = DAO_CustomField::getByContext(CerberusContexts::CONTEXT_CALL);
+	
+		foreach($cfields as $cfield_id => $cfield) {
+			$keys['cf_' . $cfield_id] = array(
+				'label' => $cfield->name,
+				'type' => $cfield->type,
+				'param' => 'cf_' . $cfield_id,
+			);
+		}
+	
+		DevblocksPlatform::sortObjects($keys, '[label]', true);
+	
+		return $keys;
+	}
+	
+	function importKeyValue($key, $value) {
+		switch($key) {
+		}
+	
+		return $value;
+	}
+	
+	function importSaveObject(array $fields, array $custom_fields, array $meta) {
+		// If new...
+		if(!isset($meta['object_id']) || empty($meta['object_id'])) {
+			// Make sure we have a name
+			if(!isset($fields[DAO_CallEntry::SUBJECT])) {
+				$fields[DAO_CallEntry::SUBJECT] = 'New ' . $this->manifest->name;
+			}
+	
+			// Create
+			$meta['object_id'] = DAO_CallEntry::create($fields);
+	
+		} else {
+			// Update
+			DAO_CallEntry::update($meta['object_id'], $fields);
+		}
+	
+		// Custom fields
+		if(!empty($custom_fields) && !empty($meta['object_id'])) {
+			DAO_CustomFieldValue::formatAndSetFieldValues($this->manifest->id, $meta['object_id'], $custom_fields, false, true, true); //$is_blank_unset (4th)
+		}
+	}	
 };
