@@ -710,7 +710,7 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		return array(
 			'id' => $call->id,
 			'name' => $call->subject,
-			'permalink' => $url_writer->write(sprintf("c=calls&id=%d-%s",$context_id, $friendly), true),
+			'permalink' => $url_writer->write(sprintf("c=profiles&type=call&id=%d-%s",$context_id, $friendly), true),
 		);
 	}
 	
@@ -765,7 +765,7 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 			
 			// URL
 			$url_writer = DevblocksPlatform::getUrlService();
-			$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=calls&id=%d-%s",$call->id, DevblocksPlatform::strToPermalink($call->subject)), true);
+			$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=profiles&type=call&id=%d-%s",$call->id, DevblocksPlatform::strToPermalink($call->subject)), true);
 		}
 		
 		return true;

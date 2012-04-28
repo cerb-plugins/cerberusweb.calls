@@ -130,6 +130,21 @@
 				<param key="uri" value="calls" />
 			</params>
 		</extension>
+	
+		<!-- Profile Page Sections -->
+		
+		<extension point="cerberusweb.ui.page.section">
+			<id>calls.page.profiles.call</id>
+			<name>Call Section</name>
+			<class>
+				<file>api/uri/profiles/call.php</file>
+				<name>PageSection_ProfilesCall</name>
+			</class>
+			<params>
+				<param key="page_id" value="core.page.profiles" />
+				<param key="uri" value="call" />
+			</params>
+		</extension>
 		
 	</extensions>
 </plugin>
