@@ -82,7 +82,7 @@
 
 {if !empty($model->id)}
 <div style="float:right;">
-	<a href="{devblocks_url}c=profiles&type=call&id={$model->id}{/devblocks_url}">view full record</a>
+	<a href="{devblocks_url}c=profiles&type=call&id={$model->id}-{$model->subject|devblocks_permalink}{/devblocks_url}">view full record</a>
 </div>
 <br clear="all">
 {/if}

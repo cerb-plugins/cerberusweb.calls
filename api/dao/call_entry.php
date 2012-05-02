@@ -696,21 +696,34 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 	}
 };
 
-class Context_Call extends Extension_DevblocksContext implements IDevblocksContextPeek, IDevblocksContextImport {
+class Context_Call extends Extension_DevblocksContext implements IDevblocksContextProfile, IDevblocksContextPeek, IDevblocksContextImport {
 	function getRandom() {
 		return DAO_CallEntry::random();
+	}
+	
+	function profileGetUrl($context_id) {
+		if(empty($context_id))
+			return '';
+	
+		$url_writer = DevblocksPlatform::getUrlService();
+		$url = $url_writer->writeNoProxy('c=profiles&type=call&id='.$context_id, true);
+		return $url;
 	}
 	
 	function getMeta($context_id) {
 		$call = DAO_CallEntry::get($context_id);
 		$url_writer = DevblocksPlatform::getUrlService();
 		
+		$url = $this->profileGetUrl($context_id);
 		$friendly = DevblocksPlatform::strToPermalink($call->subject);
+		
+		if(!empty($friendly))
+			$url .= '-' . $friendly;
 		
 		return array(
 			'id' => $call->id,
 			'name' => $call->subject,
-			'permalink' => $url_writer->write(sprintf("c=profiles&type=call&id=%d-%s",$context_id, $friendly), true),
+			'permalink' => $url,
 		);
 	}
 	
