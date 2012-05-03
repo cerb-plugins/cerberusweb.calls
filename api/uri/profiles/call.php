@@ -100,12 +100,14 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 		$tpl->assign('properties', $properties);
 			
 		// Macros
-			
 		$macros = DAO_TriggerEvent::getByOwner(CerberusContexts::CONTEXT_WORKER, $active_worker->id, 'event.macro.call');
 		$tpl->assign('macros', $macros);
-			
+
+		// Tabs
+		$tab_manifests = Extension_ContextProfileTab::getExtensions(false, CerberusContexts::CONTEXT_CALL);
+		$tpl->assign('tab_manifests', $tab_manifests);
+		
 		// Template
-			
 		$tpl->display('devblocks:cerberusweb.calls::calls/profile.tpl');
 	}
 };
