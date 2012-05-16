@@ -221,11 +221,18 @@ class DAO_CallEntry extends C4_ORMHelper {
 		
 		$param_key = $param->field;
 		settype($param_key, 'string');
+		
+		$from_context = 'cerberusweb.contexts.call';
+		$from_index = 'c.id';
+		
 		switch($param_key) {
+			case SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK:
+				$args['has_multiple_values'] = true;
+				self::_searchComponentsVirtualContextLinks($param, $from_context, $from_index, $args['join_sql'], $args['where_sql']);
+				break;
+			
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
 				$args['has_multiple_values'] = true;
-				$from_context = 'cerberusweb.contexts.call';
-				$from_index = 'c.id';
 				
 				self::_searchComponentsVirtualWatchers($param, $from_context, $from_index, $args['join_sql'], $args['where_sql']);
 				break;
@@ -316,6 +323,7 @@ class SearchFields_CallEntry {
 	const FULLTEXT_COMMENT_CONTENT = 'ftcc_content';
 
 	// Virtuals
+	const VIRTUAL_CONTEXT_LINK = '*_context_link';
 	const VIRTUAL_WATCHERS = '*_workers';
 	
 	/**
@@ -336,6 +344,7 @@ class SearchFields_CallEntry {
 			self::CONTEXT_LINK => new DevblocksSearchField(self::CONTEXT_LINK, 'context_link', 'from_context', null, null),
 			self::CONTEXT_LINK_ID => new DevblocksSearchField(self::CONTEXT_LINK_ID, 'context_link', 'from_context_id', null, null),
 			
+			self::VIRTUAL_CONTEXT_LINK => new DevblocksSearchField(self::VIRTUAL_CONTEXT_LINK, '*', 'context_link', $translate->_('common.links'), null),
 			self::VIRTUAL_WATCHERS => new DevblocksSearchField(self::VIRTUAL_WATCHERS, '*', 'workers', $translate->_('common.watchers'), 'WS'),
 		);
 		
@@ -381,6 +390,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 			SearchFields_CallEntry::CONTEXT_LINK,
 			SearchFields_CallEntry::CONTEXT_LINK_ID,
 			SearchFields_CallEntry::FULLTEXT_COMMENT_CONTENT,
+			SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK,
 			SearchFields_CallEntry::VIRTUAL_WATCHERS,
 		));
 		
@@ -497,6 +507,10 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 		$key = $param->field;
 		
 		switch($key) {
+			case SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK:
+				$this->_renderVirtualContextLinks($param);
+				break;
+
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
 				$this->_renderVirtualWatchers($param);
 				break;
@@ -523,6 +537,11 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 				break;
 			case SearchFields_CallEntry::FULLTEXT_COMMENT_CONTENT:
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__fulltext.tpl');
+				break;
+			case SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK:
+				$contexts = Extension_DevblocksContext::getAll(false);
+				$tpl->assign('contexts', $contexts);
+				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__context_link.tpl');
 				break;
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__context_worker.tpl');
@@ -581,6 +600,11 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 			case SearchFields_CallEntry::FULLTEXT_COMMENT_CONTENT:
 				@$scope = DevblocksPlatform::importGPC($_REQUEST['scope'],'string','expert');
 				$criteria = new DevblocksSearchCriteria($field,DevblocksSearchCriteria::OPER_FULLTEXT,array($value,$scope));
+				break;
+				
+			case SearchFields_TimeTrackingEntry::VIRTUAL_CONTEXT_LINK:
+				@$context_links = DevblocksPlatform::importGPC($_REQUEST['context_link'],'array',array());
+				$criteria = new DevblocksSearchCriteria($field,DevblocksSearchCriteria::OPER_IN,$context_links);
 				break;
 				
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
