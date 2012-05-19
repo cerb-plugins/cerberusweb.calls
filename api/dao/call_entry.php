@@ -437,6 +437,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 					break;
 					
 				// Watchers
+				case SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK:
 				case SearchFields_CallEntry::VIRTUAL_WATCHERS:
 					$pass = true;
 					break;
@@ -468,6 +469,10 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 				$counts = $this->_getSubtotalCountForBooleanColumn('DAO_CallEntry', $column);
 				break;
 
+			case SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK:
+				$counts = $this->_getSubtotalCountForContextLinkColumn('DAO_CallEntry', CerberusContexts::CONTEXT_CALL, $column);
+				break;
+				
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
 				$counts = $this->_getSubtotalCountForWatcherColumn('DAO_CallEntry', $column);
 				break;
