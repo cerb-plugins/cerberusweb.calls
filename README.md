@@ -1,4 +1,4 @@
-Cerb6 Plugins - cerberusweb.calls
+Cerb Plugins - cerberusweb.calls
 =================================
 Copyright (C) 2012 WebGroup Media, LLC.  
 [http://www.cerberusweb.com/](http://www.cerberusweb.com/)  
@@ -10,7 +10,7 @@ This plugin adds a new Call record type for logging incoming and outgoing phone 
 Installation
 ------------
 * Change directory to **/cerb6/storage/plugins/**
-* `git clone git://github.com/cerb6-plugins/cerberusweb.calls.git`
+* `git clone git://github.com/cerb-plugins/cerberusweb.calls.git`
 * In your helpdesk, enable the plugin from **Setup->Plugins**.
 
 Credits
