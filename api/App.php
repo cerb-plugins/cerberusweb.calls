@@ -91,6 +91,9 @@ class CallsPage extends CerberusPageExtension {
 					DAO_ContextLink::setLink(CerberusContexts::CONTEXT_CALL, $id, $link_context, $link_context_id);
 				}
 				
+				if(!empty($view_id) && !empty($id))
+					C4_AbstractView::setMarqueeContextCreated($view_id, CerberusContexts::CONTEXT_CALL, $id);
+				
 			} else { // Edit
 				$fields = array(
 					DAO_CallEntry::UPDATED_DATE => time(),
@@ -120,11 +123,6 @@ class CallsPage extends CerberusPageExtension {
 			// Custom fields
 			@$field_ids = DevblocksPlatform::importGPC($_REQUEST['field_ids'], 'array', array());
 			DAO_CustomFieldValue::handleFormPost(CerberusContexts::CONTEXT_CALL, $id, $field_ids);
-		}
-		
-		// Reload view (if linked)
-		if(!empty($view_id) && null != ($view = C4_AbstractViewLoader::getView($view_id))) {
-			$view->render();
 		}
 	}
 	
