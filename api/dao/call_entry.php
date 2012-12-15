@@ -39,10 +39,42 @@ class DAO_CallEntry extends C4_ORMHelper {
 	}
 	
 	static function update($ids, $fields) {
-		parent::_update($ids, 'call_entry', $fields);
+		if(!is_array($ids))
+			$ids = array($ids);
 		
-	    // Log the context update
-   		DevblocksPlatform::markContextChanged(CerberusContexts::CONTEXT_CALL, $ids);
+		// Make a diff for the requested objects in batches
+		
+		$chunks = array_chunk($ids, 100, true);
+		while($batch_ids = array_shift($chunks)) {
+			if(empty($batch_ids))
+				continue;
+			
+			// Get state before changes
+			$object_changes = parent::_getUpdateDeltas($batch_ids, $fields, get_class());
+
+			// Make changes
+			parent::_update($batch_ids, 'call_entry', $fields);
+			
+			// Send events
+			if(!empty($object_changes)) {
+				// Local events
+				//self::_processUpdateEvents($object_changes);
+				
+				// Trigger an event about the changes
+				$eventMgr = DevblocksPlatform::getEventService();
+				$eventMgr->trigger(
+					new Model_DevblocksEvent(
+						'dao.call_entry.update',
+						array(
+							'objects' => $object_changes,
+						)
+					)
+				);
+				
+				// Log the context update
+				DevblocksPlatform::markContextChanged(CerberusContexts::CONTEXT_CALL, $batch_ids);
+			}
+		}
 	}
 	
 	/**
@@ -168,7 +200,7 @@ class DAO_CallEntry extends C4_ORMHelper {
 			    SearchFields_CallEntry::IS_CLOSED
 			 );
 		
-		$join_sql = 
+		$join_sql =
 			"FROM call_entry c ".
 
 		// [JAS]: Dynamic table joins
@@ -215,7 +247,7 @@ class DAO_CallEntry extends C4_ORMHelper {
 		);
 		
 		return $result;
-	}	
+	}
 	
 	private static function _translateVirtualParameters($param, $key, &$args) {
 		if(!is_a($param, 'DevblocksSearchCriteria'))
@@ -264,14 +296,14 @@ class DAO_CallEntry extends C4_ORMHelper {
 		$has_multiple_values = $query_parts['has_multiple_values'];
 		$sort_sql = $query_parts['sort'];
 		
-		$sql = 
+		$sql =
 			$select_sql.
 			$join_sql.
 			$where_sql.
 			($has_multiple_values ? 'GROUP BY c.id ' : '').
 			$sort_sql;
 		
-		$rs = $db->SelectLimit($sql,$limit,$page*$limit) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg()); 
+		$rs = $db->SelectLimit($sql,$limit,$page*$limit) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg());
 		
 		$results = array();
 		
@@ -366,7 +398,7 @@ class SearchFields_CallEntry {
 		// Sort by label (translation-conscious)
 		DevblocksPlatform::sortObjects($columns, 'db_label');
 
-		return $columns;		
+		return $columns;
 	}
 };
 
@@ -489,7 +521,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 		}
 		
 		return $counts;
-	}	
+	}
 	
 	function render() {
 		$this->_sanitize();
@@ -522,7 +554,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 				$this->_renderVirtualWatchers($param);
 				break;
 		}
-	}	
+	}
 
 	function renderCriteria($field) {
 		$tpl = DevblocksPlatform::getTemplateService();
@@ -847,7 +879,7 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		}
 		
 		return $values;
-	}	
+	}
 	
 	function getChooserView($view_id=null) {
 		$active_worker = CerberusApplication::getActiveWorker();
@@ -884,7 +916,7 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		$view_id = str_replace('.','_',$this->id);
 		
 		$defaults = new C4_AbstractViewModel();
-		$defaults->id = $view_id; 
+		$defaults->id = $view_id;
 		$defaults->class_name = $this->getViewClass();
 		$view = C4_AbstractViewLoader::getView($view_id, $defaults);
 		$view->name = 'Calls';
@@ -1013,5 +1045,5 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		if(!empty($custom_fields) && !empty($meta['object_id'])) {
 			DAO_CustomFieldValue::formatAndSetFieldValues($this->manifest->id, $meta['object_id'], $custom_fields, false, true, true); //$is_blank_unset (4th)
 		}
-	}	
+	}
 };
