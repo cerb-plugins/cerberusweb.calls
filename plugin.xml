@@ -119,6 +119,25 @@
 			</params>
 		</extension>
 	
+		<!-- Event Actions -->
+		
+		<extension point="devblocks.event.action">
+			<id>calls.event.action.post</id>
+			<name>Log Call Global Event Action</name>
+			<class>
+				<file>api/App.php</file>
+				<name>WgmCalls_EventActionPost</name>
+			</class>
+			<params>
+				<param key="label" value="Create a call" />
+				<param key="events">
+					<value>
+						<data key="*" />
+					</value>
+				</param>
+			</params>
+		</extension>
+	
 		<!-- Page -->
 		
  		<extension point="cerberusweb.page">

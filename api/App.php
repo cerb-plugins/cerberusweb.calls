@@ -307,3 +307,224 @@ class CallsEventListener extends DevblocksEventListenerExtension {
 	}
 };
 endif;
+
+if(class_exists('Extension_DevblocksEventAction')):
+class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
+	function render(Extension_DevblocksEvent $event, Model_TriggerEvent $trigger, $params=array(), $seq=null) {
+		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl->assign('params', $params);
+		$tpl->assign('workers', DAO_Worker::getAll());
+		
+		if(!is_null($seq))
+			$tpl->assign('namePrefix', 'action'.$seq);
+		
+		$event = $trigger->getEvent();
+		$values_to_contexts = $event->getValuesContexts($trigger);
+		$tpl->assign('values_to_contexts', $values_to_contexts);
+		
+		$custom_fields = DAO_CustomField::getByContext(CerberusContexts::CONTEXT_CALL);
+		$tpl->assign('custom_fields', $custom_fields);
+
+		if(false != ($params = $tpl->getVariable('params'))) {
+			$params = $params->value;
+			$custom_field_values = DevblocksEventHelper::getCustomFieldValuesFromParams($params);
+			$tpl->assign('custom_field_values', $custom_field_values);
+		}
+		
+		$tpl->display('devblocks:cerberusweb.calls::calls/events/action_create_call.tpl');
+	}
+	
+	function simulate($token, Model_TriggerEvent $trigger, $params, DevblocksDictionaryDelegate $dict) {
+		@$watcher_worker_ids = DevblocksPlatform::importVar($params['worker_id'],'array',array());
+		$watcher_worker_ids = DevblocksEventHelper::mergeWorkerVars($watcher_worker_ids, $dict);
+		
+		@$notify_worker_ids = DevblocksPlatform::importVar($params['notify_worker_id'],'array',array());
+		$notify_worker_ids = DevblocksEventHelper::mergeWorkerVars($notify_worker_ids, $dict);
+				
+		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
+		$subject = $tpl_builder->build($params['subject'], $dict);
+		$phone = $tpl_builder->build($params['phone'], $dict);
+		$is_outgoing = $params['is_outgoing'];
+		$is_closed = $params['is_closed'];
+		$created = intval(@strtotime($tpl_builder->build($params['created'], $dict)));
+		$comment = $tpl_builder->build($params['comment'], $dict);
+
+		if(empty($created))
+			$created = time();
+		
+		$out = sprintf(">>> Creating call\n".
+			"Subject: %s\n".
+			"Phone #: %s\n".
+			"Type: %s\n".
+			"Status: %s\n".
+			"Created: %s (%s)\n".
+			"",
+			$subject,
+			$phone,
+			($is_outgoing ? 'Outgoing' : 'Incoming'),
+			($is_closed ? 'Closed' : 'Open'),
+			(!empty($created) ? date("Y-m-d h:ia", $created) : 'none'),
+			$params['created']
+		);
+
+		$custom_fields = DAO_CustomField::getAll();
+		$custom_field_values = DevblocksEventHelper::getCustomFieldValuesFromParams($params);
+		
+		foreach($custom_field_values as $cf_id => $val) {
+			if(!isset($custom_fields[$cf_id]))
+				continue;
+			
+			if(is_null($val))
+				continue;
+			
+			if(is_array($val))
+				$val = implode('; ', $val);
+			
+			$out .= $custom_fields[$cf_id]->name . ': ' . $val . "\n";
+		}
+		
+		$out .= "\n";
+		
+		// On
+
+		$trigger = $dict->_trigger;
+		$event = $trigger->getEvent();
+		
+		@$on = DevblocksPlatform::importVar($params['on'],'string',$default_on);
+		
+		if(!empty($on)) {
+			$on_result = DevblocksEventHelper::onContexts($on, $event->getValuesContexts($trigger), $dict);
+			@$on_objects = $on_result['objects'];
+			
+			if(is_array($on_objects)) {
+				$out .= ">>> On:\n";
+				
+				foreach($on_objects as $on_object) {
+					$on_object_context = Extension_DevblocksContext::get($on_object->_context);;
+					$out .= ' * (' . $on_object_context->manifest->name . ') ' . $on_object->_label . "\n";
+				}
+				$out .= "\n";
+			}
+		}
+		
+		// Watchers
+		if(is_array($watcher_worker_ids) && !empty($watcher_worker_ids)) {
+			$out .= ">>> Adding watchers to call:\n";
+			foreach($watcher_worker_ids as $worker_id) {
+				if(null != ($worker = DAO_Worker::get($worker_id))) {
+					$out .= ' * ' . $worker->getName() . "\n";
+				}
+			}
+			$out .= "\n";
+		}
+		
+		// Comment content
+		if(!empty($comment)) {
+			$out .= sprintf(">>> Writing comment on call\n\n".
+				"%s\n\n",
+				$comment
+			);
+			
+			if(!empty($notify_worker_ids) && is_array($notify_worker_ids)) {
+				$out .= ">>> Notifying\n";
+				foreach($notify_worker_ids as $worker_id) {
+					if(null != ($worker = DAO_Worker::get($worker_id))) {
+						$out .= ' * ' . $worker->getName() . "\n";
+					}
+				}
+				$out .= "\n";
+			}
+		}
+		
+		// Connection
+		if(!empty($context) && !empty($context_id)) {
+			if(null != ($ctx = Extension_DevblocksContext::get($context, true))) {
+				$meta = $ctx->getMeta($context_id);
+				$out .= ">>> Linking new call to:\n";
+				$out .= ' * (' . $ctx->manifest->name . ') ' . $meta['name'] . "\n";
+				$out .= "\n";
+			}
+		}
+		
+		return $out;
+	}
+	
+	function run($token, Model_TriggerEvent $trigger, $params, DevblocksDictionaryDelegate $dict) {
+		@$watcher_worker_ids = DevblocksPlatform::importVar($params['worker_id'],'array',array());
+		$watcher_worker_ids = DevblocksEventHelper::mergeWorkerVars($watcher_worker_ids, $dict);
+		
+		@$notify_worker_ids = DevblocksPlatform::importVar($params['notify_worker_id'],'array',array());
+		$notify_worker_ids = DevblocksEventHelper::mergeWorkerVars($notify_worker_ids, $dict);
+				
+		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
+		$subject = $tpl_builder->build($params['subject'], $dict);
+		$phone = $tpl_builder->build($params['phone'], $dict);
+		$is_outgoing = intval($params['is_outgoing']);
+		$is_closed = intval($params['is_closed']);
+		$created = intval(@strtotime($tpl_builder->build($params['created'], $dict)));
+		$comment = $tpl_builder->build($params['comment'], $dict);
+
+		if(empty($created))
+			$created = time();
+		
+		// On
+
+		$trigger = $dict->_trigger;
+		$event = $trigger->getEvent();
+		
+		@$on = DevblocksPlatform::importVar($params['on'],'string',$default_on);
+		
+		if(!empty($on)) {
+			$on_result = DevblocksEventHelper::onContexts($on, $event->getValuesContexts($trigger), $dict);
+			@$on_objects = $on_result['objects'];
+			
+			if(is_array($on_objects)) {
+				foreach($on_objects as $on_object) {
+					$fields = array(
+						DAO_CallEntry::SUBJECT => $subject,
+						DAO_CallEntry::PHONE => $phone,
+						DAO_CallEntry::CREATED_DATE => $created,
+						DAO_CallEntry::UPDATED_DATE => time(),
+						DAO_CallEntry::IS_CLOSED => $is_closed ? 1 : 0,
+						DAO_CallEntry::IS_OUTGOING => $is_outgoing ? 1 : 0,
+					);
+					$call_id = DAO_CallEntry::create($fields);
+					
+					// Custom fields
+					$custom_field_values = DevblocksEventHelper::getCustomFieldValuesFromParams($params);
+					
+					if(is_array($custom_field_values))
+					foreach($custom_field_values as $cf_id => $val) {
+						if(is_string($val))
+							$val = $tpl_builder->build($val, $dict);
+					
+						DAO_CustomFieldValue::formatAndSetFieldValues(CerberusContexts::CONTEXT_CALL, $call_id, array($cf_id => $val));
+					}
+					
+					// Watchers
+					if(is_array($watcher_worker_ids) && !empty($watcher_worker_ids)) {
+						CerberusContexts::addWatchers(CerberusContexts::CONTEXT_CALL, $call_id, $watcher_worker_ids);
+					}
+					
+					// Comment content
+					if(!empty($comment)) {
+						$fields = array(
+							DAO_Comment::ADDRESS_ID => 0,
+							DAO_Comment::COMMENT => $comment,
+							DAO_Comment::CONTEXT => CerberusContexts::CONTEXT_CALL,
+							DAO_Comment::CONTEXT_ID => $call_id,
+							DAO_Comment::CREATED => time(),
+						);
+						DAO_Comment::create($fields, $notify_worker_ids);
+					}
+					
+					// Connection
+					DAO_ContextLink::setLink(CerberusContexts::CONTEXT_CALL, $call_id, $on_object->_context, $on_object->id);
+				}
+			}
+		}
+
+		return $call_id;
+	}
+};
+endif;
