@@ -19,7 +19,7 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 	protected $_event_id = null; // override
 
 	/**
-	 * 
+	 *
 	 * @param integer $call_id
 	 * @return Model_DevblocksEvent
 	 */
@@ -52,7 +52,7 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 				'call_id' => $call_id,
 			)
 		);
-	}	
+	}
 	
 	function setEvent(Model_DevblocksEvent $event_model=null) {
 		$labels = array();
@@ -62,7 +62,7 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 		 * Call
 		 */
 		
-		@$call_id = $event_model->params['call_id']; 
+		@$call_id = $event_model->params['call_id'];
 		$call_labels = array();
 		$call_values = array();
 		CerberusContexts::getContext(CerberusContexts::CONTEXT_CALL, $call_id, $call_labels, $call_values, null, true);
@@ -82,7 +82,7 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 		 */
 
 		$this->setLabels($labels);
-		$this->setValues($values);		
+		$this->setValues($values);
 	}
 	
 	function getValuesContexts($trigger) {
@@ -125,7 +125,7 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 
 		$conditions = $this->_importLabelsTypesAsConditions($labels, $types);
 		
-		return $conditions;		
+		return $conditions;
 	}
 	
 	function renderConditionExtension($token, $trigger, $params=array(), $seq=null) {
@@ -228,7 +228,7 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 	}
 	
 	function getActionExtensions() {
-		$actions = 
+		$actions =
 			array(
 				'add_watchers' => array('label' =>'Add watchers'),
 				'create_comment' => array('label' =>'Create a comment'),
