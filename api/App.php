@@ -1,8 +1,8 @@
 <?php
 /***********************************************************************
-| Cerb(tm) developed by WebGroup Media, LLC.
+| Cerb(tm) developed by Webgroup Media, LLC.
 |-----------------------------------------------------------------------
-| All source code & content (c) Copyright 2012, WebGroup Media LLC
+| All source code & content (c) Copyright 2013, Webgroup Media LLC
 |   unless specifically noted otherwise.
 |
 | This source code is released under the Devblocks Public License.
@@ -116,7 +116,8 @@ class CallsPage extends CerberusPageExtension {
 					DAO_Comment::CONTEXT => CerberusContexts::CONTEXT_CALL,
 					DAO_Comment::CONTEXT_ID => $id,
 					DAO_Comment::COMMENT => $comment,
-					DAO_Comment::ADDRESS_ID => $active_worker->getAddress()->id,
+					DAO_Comment::OWNER_CONTEXT => CerberusContexts::CONTEXT_WORKER,
+					DAO_Comment::OWNER_CONTEXT_ID => $active_worker->id,
 				);
 				$comment_id = DAO_Comment::create($fields, $also_notify_worker_ids);
 			}
@@ -509,7 +510,8 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 					// Comment content
 					if(!empty($comment)) {
 						$fields = array(
-							DAO_Comment::ADDRESS_ID => 0,
+							DAO_Comment::OWNER_CONTEXT => $trigger->owner_context,
+							DAO_Comment::OWNER_CONTEXT_ID => $trigger->owner_context_id,
 							DAO_Comment::COMMENT => $comment,
 							DAO_Comment::CONTEXT => CerberusContexts::CONTEXT_CALL,
 							DAO_Comment::CONTEXT_ID => $call_id,
