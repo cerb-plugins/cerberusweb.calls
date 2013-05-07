@@ -12,24 +12,7 @@
 
 <div style="clear:both;"></div>
 
-<fieldset class="properties">
-	<legend>{'calls.common.call'|devblocks_translate|capitalize}</legend>
-
-	{foreach from=$properties item=v key=k name=props}
-		<div class="property">
-			{if $k == '...'}
-				<b>{$translate->_('...')|capitalize}:</b>
-				...
-			{else}
-				{include file="devblocks:cerberusweb.core::internal/custom_fields/profile_cell_renderer.tpl"}
-			{/if}
-		</div>
-		{if $smarty.foreach.props.iteration % 3 == 0 && !$smarty.foreach.props.last}
-			<br clear="all">
-		{/if}
-	{/foreach}
-	<br clear="all">
-		
+<div class="cerb-profile-toolbar">
 	<form class="toolbar" action="{devblocks_url}{/devblocks_url}" onsubmit="return false;" style="margin-bottom:5px;">
 		<!-- Toolbar -->
 		
@@ -47,14 +30,37 @@
 	</form>
 	
 	{if $pref_keyboard_shortcuts}
-	<small>
+		<small>
 		{$translate->_('common.keyboard')|lower}:
 		(<b>e</b>) {'common.edit'|devblocks_translate|lower}
 		{if !empty($macros)}(<b>m</b>) {'common.macros'|devblocks_translate|lower} {/if}
 		(<b>1-9</b>) change tab
-	</small> 
+		</small>
 	{/if}
+</div>
+
+<fieldset class="properties">
+	<legend>{'calls.common.call'|devblocks_translate|capitalize}</legend>
+
+	<div style="margin-left:15px;">
+	{foreach from=$properties item=v key=k name=props}
+		<div class="property">
+			{if $k == '...'}
+				<b>{$translate->_('...')|capitalize}:</b>
+				...
+			{else}
+				{include file="devblocks:cerberusweb.core::internal/custom_fields/profile_cell_renderer.tpl"}
+			{/if}
+		</div>
+		{if $smarty.foreach.props.iteration % 3 == 0 && !$smarty.foreach.props.last}
+			<br clear="all">
+		{/if}
+	{/foreach}
+	<br clear="all">
+	</div>
 </fieldset>
+
+{include file="devblocks:cerberusweb.core::internal/custom_fieldsets/profile_fieldsets.tpl" properties=$properties_custom_fieldsets}
 
 <div>
 {include file="devblocks:cerberusweb.core::internal/notifications/context_profile.tpl" context=$page_context context_id=$page_context_id}

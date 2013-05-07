@@ -266,6 +266,10 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 				self::_searchComponentsVirtualContextLinks($param, $from_context, $from_index, $args['join_sql'], $args['where_sql']);
 				break;
 			
+			case SearchFields_CallEntry::VIRTUAL_HAS_FIELDSET:
+				self::_searchComponentsVirtualHasFieldset($param, $from_context, $from_index, $args['join_sql'], $args['where_sql']);
+				break;
+				
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
 				$args['has_multiple_values'] = true;
 				
@@ -359,6 +363,7 @@ class SearchFields_CallEntry {
 
 	// Virtuals
 	const VIRTUAL_CONTEXT_LINK = '*_context_link';
+	const VIRTUAL_HAS_FIELDSET = '*_has_fieldset';
 	const VIRTUAL_WATCHERS = '*_workers';
 	
 	/**
@@ -380,6 +385,7 @@ class SearchFields_CallEntry {
 			self::CONTEXT_LINK_ID => new DevblocksSearchField(self::CONTEXT_LINK_ID, 'context_link', 'from_context_id', null, null),
 			
 			self::VIRTUAL_CONTEXT_LINK => new DevblocksSearchField(self::VIRTUAL_CONTEXT_LINK, '*', 'context_link', $translate->_('common.links'), null),
+			self::VIRTUAL_HAS_FIELDSET => new DevblocksSearchField(self::VIRTUAL_HAS_FIELDSET, '*', 'has_fieldset', $translate->_('common.fieldset'), null),
 			self::VIRTUAL_WATCHERS => new DevblocksSearchField(self::VIRTUAL_WATCHERS, '*', 'workers', $translate->_('common.watchers'), 'WS'),
 		);
 		
@@ -388,13 +394,14 @@ class SearchFields_CallEntry {
 			$columns[self::FULLTEXT_COMMENT_CONTENT] = new DevblocksSearchField(self::FULLTEXT_COMMENT_CONTENT, 'ftcc', 'content', $translate->_('comment.filters.content'), 'FT');
 		}
 		
-		// Custom Fields
-		$fields = DAO_CustomField::getByContext(CerberusContexts::CONTEXT_CALL);
-		if(is_array($fields))
-		foreach($fields as $field_id => $field) {
-			$key = 'cf_'.$field_id;
-			$columns[$key] = new DevblocksSearchField($key,$key,'field_value',$field->name,$field->type);
-		}
+		// Custom fields with fieldsets
+		
+		$custom_columns = DevblocksSearchField::getCustomSearchFieldsByContexts(array(
+			CerberusContexts::CONTEXT_CALL,
+		));
+		
+		if(is_array($custom_columns))
+			$columns = array_merge($columns, $custom_columns);
 		
 		// Sort by label (translation-conscious)
 		DevblocksPlatform::sortObjects($columns, 'db_label');
@@ -426,6 +433,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 			SearchFields_CallEntry::CONTEXT_LINK_ID,
 			SearchFields_CallEntry::FULLTEXT_COMMENT_CONTENT,
 			SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK,
+			SearchFields_CallEntry::VIRTUAL_HAS_FIELDSET,
 			SearchFields_CallEntry::VIRTUAL_WATCHERS,
 		));
 		
@@ -456,7 +464,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 	}
 	
 	function getSubtotalFields() {
-		$all_fields = $this->getParamsAvailable();
+		$all_fields = $this->getParamsAvailable(true);
 		
 		$fields = array();
 
@@ -473,6 +481,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 					
 				// Watchers
 				case SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK:
+				case SearchFields_CallEntry::VIRTUAL_HAS_FIELDSET:
 				case SearchFields_CallEntry::VIRTUAL_WATCHERS:
 					$pass = true;
 					break;
@@ -506,6 +515,10 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 
 			case SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK:
 				$counts = $this->_getSubtotalCountForContextLinkColumn('DAO_CallEntry', CerberusContexts::CONTEXT_CALL, $column);
+				break;
+				
+			case SearchFields_CallEntry::VIRTUAL_HAS_FIELDSET:
+				$counts = $this->_getSubtotalCountForHasFieldsetColumn('DAO_CallEntry', CerberusContexts::CONTEXT_CALL, $column);
 				break;
 				
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
@@ -550,6 +563,10 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 			case SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK:
 				$this->_renderVirtualContextLinks($param);
 				break;
+				
+			case SearchFields_CallEntry::VIRTUAL_HAS_FIELDSET:
+				$this->_renderVirtualHasFieldset($param);
+				break;
 
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
 				$this->_renderVirtualWatchers($param);
@@ -582,6 +599,9 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 				$contexts = Extension_DevblocksContext::getAll(false);
 				$tpl->assign('contexts', $contexts);
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__context_link.tpl');
+				break;
+			case SearchFields_CallEntry::VIRTUAL_HAS_FIELDSET:
+				$this->_renderCriteriaHasFieldset($tpl, CerberusContexts::CONTEXT_CALL);
 				break;
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
 				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__context_worker.tpl');
@@ -642,9 +662,14 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals 
 				$criteria = new DevblocksSearchCriteria($field,DevblocksSearchCriteria::OPER_FULLTEXT,array($value,$scope));
 				break;
 				
-			case SearchFields_TimeTrackingEntry::VIRTUAL_CONTEXT_LINK:
+			case SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK:
 				@$context_links = DevblocksPlatform::importGPC($_REQUEST['context_link'],'array',array());
 				$criteria = new DevblocksSearchCriteria($field,DevblocksSearchCriteria::OPER_IN,$context_links);
+				break;
+				
+			case SearchFields_CallEntry::VIRTUAL_HAS_FIELDSET:
+				@$options = DevblocksPlatform::importGPC($_REQUEST['options'],'array',array());
+				$criteria = new DevblocksSearchCriteria($field,DevblocksSearchCriteria::OPER_IN,$options);
 				break;
 				
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
@@ -818,11 +843,10 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 			'record_url' => $prefix.$translate->_('common.url.record'),
 		);
 		
-		if(is_array($fields))
-		foreach($fields as $cf_id => $field) {
-			$token_labels['custom_'.$cf_id] = $prefix.$field->name;
-		}
-
+		// Custom field/fieldset token labels
+		if(false !== ($custom_field_labels = $this->_getTokenLabelsFromCustomFields($fields, $prefix)) && is_array($custom_field_labels))
+			$token_labels = array_merge($token_labels, $custom_field_labels);
+		
 		// Token values
 		$token_values = array();
 		
@@ -948,7 +972,7 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 			$tpl->assign('model', $call);
 		}
 		
-		$custom_fields = DAO_CustomField::getByContext(CerberusContexts::CONTEXT_CALL);
+		$custom_fields = DAO_CustomField::getByContext(CerberusContexts::CONTEXT_CALL, false);
 		$tpl->assign('custom_fields', $custom_fields);
 		
 		if(!empty($id)) {
