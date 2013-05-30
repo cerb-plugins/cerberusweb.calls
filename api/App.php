@@ -343,6 +343,7 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 		$notify_worker_ids = DevblocksEventHelper::mergeWorkerVars($notify_worker_ids, $dict);
 				
 		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
+		
 		$subject = $tpl_builder->build($params['subject'], $dict);
 		$phone = $tpl_builder->build($params['phone'], $dict);
 		$is_outgoing = $params['is_outgoing'];
@@ -380,6 +381,8 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 			
 			if(is_array($val))
 				$val = implode('; ', $val);
+			
+			$val = $tpl_builder->build($val, $dict);
 			
 			$out .= $custom_fields[$cf_id]->name . ': ' . $val . "\n";
 		}
