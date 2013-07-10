@@ -1027,16 +1027,9 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 				'param' => SearchFields_CallEntry::UPDATED_DATE,
 			),
 		);
-	
-		$cfields = DAO_CustomField::getByContext(CerberusContexts::CONTEXT_CALL);
-	
-		foreach($cfields as $cfield_id => $cfield) {
-			$keys['cf_' . $cfield_id] = array(
-				'label' => $cfield->name,
-				'type' => $cfield->type,
-				'param' => 'cf_' . $cfield_id,
-			);
-		}
+		
+		$fields = SearchFields_CallEntry::getFields();
+		self::_getImportCustomFields($fields, $keys);
 	
 		DevblocksPlatform::sortObjects($keys, '[label]', true);
 	
