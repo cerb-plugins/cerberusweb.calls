@@ -46,5 +46,12 @@
 		<tu tuid='call_entry.model.phone'>
 			<tuv xml:lang="en_US"><seg>Phone</seg></tuv>
 		</tu>
+		
+		<!-- Activity points -->
+		
+		<tu tuid='activities.call_entry.created'>
+			<tuv xml:lang="en_US"><seg>{{actor}} created call {{target}}</seg></tuv>
+		</tu>
+		
 	</body>
 </tmx>
