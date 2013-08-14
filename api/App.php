@@ -147,7 +147,12 @@ class CallsPage extends CerberusPageExtension {
 		$tpl->assign('custom_fields', $custom_fields);
 		
 		// Macros
-		$macros = DAO_TriggerEvent::getByOwner(CerberusContexts::CONTEXT_WORKER, $active_worker->id, 'event.macro.call');
+		$macros = DAO_TriggerEvent::getByVirtualAttendantOwners(
+			array(
+				array(CerberusContexts::CONTEXT_WORKER, $active_worker->id),
+			),
+			'event.macro.call'
+		);
 		$tpl->assign('macros', $macros);
 		
 		$tpl->display('devblocks:cerberusweb.calls::calls/ajax/bulk.tpl');
@@ -513,8 +518,8 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 					// Comment content
 					if(!empty($comment)) {
 						$fields = array(
-							DAO_Comment::OWNER_CONTEXT => $trigger->owner_context,
-							DAO_Comment::OWNER_CONTEXT_ID => $trigger->owner_context_id,
+							DAO_Comment::OWNER_CONTEXT => CerberusContexts::CONTEXT_VIRTUAL_ATTENDANT,
+							DAO_Comment::OWNER_CONTEXT_ID => $trigger->virtual_attendant_id,
 							DAO_Comment::COMMENT => $comment,
 							DAO_Comment::CONTEXT => CerberusContexts::CONTEXT_CALL,
 							DAO_Comment::CONTEXT_ID => $call_id,
