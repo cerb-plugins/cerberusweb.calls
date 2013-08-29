@@ -147,10 +147,9 @@ class CallsPage extends CerberusPageExtension {
 		$tpl->assign('custom_fields', $custom_fields);
 		
 		// Macros
-		$macros = DAO_TriggerEvent::getByVirtualAttendantOwners(
-			array(
-				array(CerberusContexts::CONTEXT_WORKER, $active_worker->id),
-			),
+		
+		$macros = DAO_TriggerEvent::getReadableByActor(
+			$active_worker,
 			'event.macro.call'
 		);
 		$tpl->assign('macros', $macros);
