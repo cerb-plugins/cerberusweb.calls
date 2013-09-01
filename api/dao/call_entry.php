@@ -834,6 +834,17 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		);
 	}
 	
+	// [TODO] Interface
+	function getDefaultProperties() {
+		return array(
+			'phone',
+			'is_outgoing',
+			'is_closed',
+			'created',
+			'updated',
+		);
+	}
+	
 	function getContext($call, &$token_labels, &$token_values, $prefix=null) {
 		if(is_null($prefix))
 			$prefix = 'Call:';
@@ -852,13 +863,26 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		
 		// Token labels
 		$token_labels = array(
-			'created|date' => $prefix.$translate->_('common.created'),
+			'_label' => $prefix,
+			'created' => $prefix.$translate->_('common.created'),
 			'is_closed' => $prefix.$translate->_('call_entry.model.is_closed'),
 			'is_outgoing' => $prefix.$translate->_('call_entry.model.is_outgoing'),
 			'phone' => $prefix.$translate->_('call_entry.model.phone'),
 			'subject' => $prefix.$translate->_('message.header.subject'),
-			'updated|date' => $prefix.$translate->_('common.updated'),
+			'updated' => $prefix.$translate->_('common.updated'),
 			'record_url' => $prefix.$translate->_('common.url.record'),
+		);
+		
+		// Token types
+		$token_types = array(
+			'_label' => 'context_url',
+			'created' => Model_CustomField::TYPE_DATE,
+			'is_closed' => Model_CustomField::TYPE_CHECKBOX,
+			'is_outgoing' => Model_CustomField::TYPE_CHECKBOX,
+			'phone' => Model_CustomField::TYPE_SINGLE_LINE,
+			'subject' => Model_CustomField::TYPE_SINGLE_LINE,
+			'updated' => Model_CustomField::TYPE_DATE,
+			'record_url' => Model_CustomField::TYPE_URL,
 		);
 		
 		// Custom field/fieldset token labels
@@ -869,6 +893,7 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		$token_values = array();
 		
 		$token_values['_context'] = CerberusContexts::CONTEXT_CALL;
+		$token_values['_types'] = $token_types;
 		
 		// Call token values
 		if($call) {

@@ -118,12 +118,12 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 		$labels['call_watcher_count'] = 'Call watcher count';
 		
 		$types = array(
-			'call_created|date' => Model_CustomField::TYPE_DATE,
+			'call_created' => Model_CustomField::TYPE_DATE,
 			'call_is_closed' => Model_CustomField::TYPE_CHECKBOX,
 			'call_is_outgoing' => Model_CustomField::TYPE_CHECKBOX,
 			'call_phone' => Model_CustomField::TYPE_SINGLE_LINE,
 			'call_subject' => Model_CustomField::TYPE_SINGLE_LINE,
-			'call_updated|date' => Model_CustomField::TYPE_DATE,
+			'call_updated' => Model_CustomField::TYPE_DATE,
 			
 			'call_link' => null,
 			'call_watcher_count' => null,
