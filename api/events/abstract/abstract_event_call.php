@@ -113,22 +113,14 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 	
 	function getConditionExtensions() {
 		$labels = $this->getLabels();
+		$types = $this->getTypes();
 		
 		$labels['call_link'] = 'Call is linked';
 		$labels['call_watcher_count'] = 'Call watcher count';
 		
-		$types = array(
-			'call_created' => Model_CustomField::TYPE_DATE,
-			'call_is_closed' => Model_CustomField::TYPE_CHECKBOX,
-			'call_is_outgoing' => Model_CustomField::TYPE_CHECKBOX,
-			'call_phone' => Model_CustomField::TYPE_SINGLE_LINE,
-			'call_subject' => Model_CustomField::TYPE_SINGLE_LINE,
-			'call_updated' => Model_CustomField::TYPE_DATE,
-			
-			'call_link' => null,
-			'call_watcher_count' => null,
-		);
-
+		$types['call_link'] = null;
+		$types['call_watcher_count'] = null;
+		
 		$conditions = $this->_importLabelsTypesAsConditions($labels, $types);
 		
 		return $conditions;
