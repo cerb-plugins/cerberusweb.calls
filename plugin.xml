@@ -49,6 +49,8 @@
 	<activity_points>
 		<activity point="call_entry.created">
 			<param key="label_key" value="Call Created" />
+			<param key="string_key" value="activities.call_entry.created" />
+			<param key="options" value="" />
 		</activity>
 	</activity_points>
 
