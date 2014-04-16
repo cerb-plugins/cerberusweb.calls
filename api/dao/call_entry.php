@@ -56,7 +56,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 		return $id;
 	}
 	
-	static function update($ids, $fields) {
+	static function update($ids, $fields, $check_deltas=true) {
 		if(!is_array($ids))
 			$ids = array($ids);
 		
@@ -67,16 +67,16 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			if(empty($batch_ids))
 				continue;
 			
-			// Get state before changes
-			$object_changes = parent::_getUpdateDeltas($batch_ids, $fields, get_class());
-
+			// Send events
+			if($check_deltas) {
+				CerberusContexts::checkpointChanges(CerberusContexts::CONTEXT_CALL, $batch_ids);
+			}
+			
 			// Make changes
 			parent::_update($batch_ids, 'call_entry', $fields);
 			
 			// Send events
-			if(!empty($object_changes)) {
-				// Local events
-				//self::_processUpdateEvents($object_changes);
+			if($check_deltas) {
 				
 				// Trigger an event about the changes
 				$eventMgr = DevblocksPlatform::getEventService();
@@ -84,7 +84,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 					new Model_DevblocksEvent(
 						'dao.call_entry.update',
 						array(
-							'objects' => $object_changes,
+							'fields' => $fields,
 						)
 					)
 				);
@@ -152,17 +152,17 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 
 	static function maint() {
 		// Fire event
-	    $eventMgr = DevblocksPlatform::getEventService();
-	    $eventMgr->trigger(
-	        new Model_DevblocksEvent(
-	            'context.maint',
-                array(
-                	'context' => CerberusContexts::CONTEXT_CALL,
-                	'context_table' => 'call_entry',
-                	'context_key' => 'id',
-                )
-            )
-	    );
+		$eventMgr = DevblocksPlatform::getEventService();
+		$eventMgr->trigger(
+			new Model_DevblocksEvent(
+				'context.maint',
+				array(
+					'context' => CerberusContexts::CONTEXT_CALL,
+					'context_table' => 'call_entry',
+					'context_key' => 'id',
+				)
+			)
+		);
 	}
 	
 	static function delete($ids) {
@@ -174,16 +174,16 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 		$db->Execute(sprintf("DELETE FROM call_entry WHERE id IN (%s)", $ids_list));
 		
 		// Fire event
-	    $eventMgr = DevblocksPlatform::getEventService();
-	    $eventMgr->trigger(
-	        new Model_DevblocksEvent(
-	            'context.delete',
-                array(
-                	'context' => CerberusContexts::CONTEXT_CALL,
-                	'context_ids' => $ids
-                )
-            )
-	    );
+		$eventMgr = DevblocksPlatform::getEventService();
+		$eventMgr->trigger(
+			new Model_DevblocksEvent(
+				'context.delete',
+				array(
+					'context' => CerberusContexts::CONTEXT_CALL,
+					'context_ids' => $ids
+				)
+			)
+		);
 		
 		return true;
 	}
@@ -199,7 +199,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 		if('*'==substr($sortBy,0,1) || !isset($fields[$sortBy]) || !in_array($sortBy,$columns))
 			$sortBy=null;
 
-        list($tables,$wheres) = parent::_parseSearchParams($params, $columns, $fields, $sortBy);
+		list($tables,$wheres) = parent::_parseSearchParams($params, $columns, $fields, $sortBy);
 		
 		$select_sql = sprintf("SELECT ".
 			"c.id as %s, ".
@@ -209,13 +209,13 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			"c.updated_date as %s, ".
 			"c.is_outgoing as %s, ".
 			"c.is_closed as %s ",
-			    SearchFields_CallEntry::ID,
-			    SearchFields_CallEntry::SUBJECT,
-			    SearchFields_CallEntry::PHONE,
-			    SearchFields_CallEntry::CREATED_DATE,
-			    SearchFields_CallEntry::UPDATED_DATE,
-			    SearchFields_CallEntry::IS_OUTGOING,
-			    SearchFields_CallEntry::IS_CLOSED
+				SearchFields_CallEntry::ID,
+				SearchFields_CallEntry::SUBJECT,
+				SearchFields_CallEntry::PHONE,
+				SearchFields_CallEntry::CREATED_DATE,
+				SearchFields_CallEntry::UPDATED_DATE,
+				SearchFields_CallEntry::IS_OUTGOING,
+				SearchFields_CallEntry::IS_CLOSED
 			 );
 		
 		$join_sql =
@@ -280,7 +280,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			case SearchFields_CallEntry::FULLTEXT_COMMENT_CONTENT:
 				$search = Extension_DevblocksSearchSchema::get(Search_CommentContent::ID);
 				$query = $search->getQueryFromParam($param);
-				$ids = $search->query($query, array('context_crc32' => sprintf("%u", crc32($from_context))), 250);
+				$ids = $search->query($query, array('context_crc32' => sprintf("%u", crc32($from_context))));
 				
 				$from_ids = DAO_Comment::getContextIdsByContextAndIds($from_context, $ids);
 				
@@ -307,18 +307,18 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 		}
 	}
 	
-    /**
-     * Enter description here...
-     *
-     * @param DevblocksSearchCriteria[] $params
-     * @param integer $limit
-     * @param integer $page
-     * @param string $sortBy
-     * @param boolean $sortAsc
-     * @param boolean $withCounts
-     * @return array
-     */
-    static function search($columns, $params, $limit=10, $page=0, $sortBy=null, $sortAsc=null, $withCounts=true) {
+	/**
+	 * Enter description here...
+	 *
+	 * @param DevblocksSearchCriteria[] $params
+	 * @param integer $limit
+	 * @param integer $page
+	 * @param string $sortBy
+	 * @param boolean $sortAsc
+	 * @param boolean $withCounts
+	 * @return array
+	 */
+	static function search($columns, $params, $limit=10, $page=0, $sortBy=null, $sortAsc=null, $withCounts=true) {
 		$db = DevblocksPlatform::getDatabaseService();
 
 		// Build search queries
@@ -349,18 +349,21 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			$id = intval($row[SearchFields_CallEntry::ID]);
 			$results[$id] = $result;
 		}
+
+		$total = count($results);
 		
-		// [JAS]: Count all
-		$total = -1;
 		if($withCounts) {
-			$count_sql = "SELECT count(*) " . $join_sql . $where_sql;
-			$total = $db->GetOne($count_sql);
+			// We can skip counting if we have a less-than-full single page
+			if(!(0 == $page && $total < $limit)) {
+				$count_sql = "SELECT count(*) " . $join_sql . $where_sql;
+				$total = $db->GetOne($count_sql);
+			}
 		}
 		
 		mysqli_free_result($rs);
 		
 		return array($results,$total);
-    }
+	}
 	
 };
 
@@ -891,6 +894,8 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 			$call = DAO_CallEntry::get($call);
 		} elseif($call instanceof Model_CallEntry) {
 			// It's what we want already.
+		} elseif(is_array($call)) {
+			$call = Cerb_ORMHelper::recastArrayToModel($call, 'Model_CallEntry');
 		} else {
 			$call = null;
 		}
@@ -898,6 +903,7 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		// Token labels
 		$token_labels = array(
 			'_label' => $prefix,
+			'id' => $prefix.$translate->_('common.id'),
 			'created' => $prefix.$translate->_('common.created'),
 			'is_closed' => $prefix.$translate->_('call_entry.model.is_closed'),
 			'is_outgoing' => $prefix.$translate->_('call_entry.model.is_outgoing'),
@@ -910,6 +916,7 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		// Token types
 		$token_types = array(
 			'_label' => 'context_url',
+			'id' => Model_CustomField::TYPE_NUMBER,
 			'created' => Model_CustomField::TYPE_DATE,
 			'is_closed' => Model_CustomField::TYPE_CHECKBOX,
 			'is_outgoing' => Model_CustomField::TYPE_CHECKBOX,
@@ -944,6 +951,9 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 			$token_values['phone'] = $call->phone;
 			$token_values['subject'] = $call->subject;
 			$token_values['updated'] = $call->updated_date;
+			
+			// Custom fields
+			$token_values = $this->_importModelCustomFieldsAsValues($call, $token_values);
 			
 			// URL
 			$url_writer = DevblocksPlatform::getUrlService();

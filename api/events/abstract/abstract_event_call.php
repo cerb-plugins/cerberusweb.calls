@@ -20,12 +20,12 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 
 	/**
 	 *
-	 * @param integer $call_id
+	 * @param integer $context_id
 	 * @return Model_DevblocksEvent
 	 */
-	function generateSampleEventModel(Model_TriggerEvent $trigger, $call_id=null) {
+	function generateSampleEventModel(Model_TriggerEvent $trigger, $context_id=null) {
 		
-		if(empty($call_id)) {
+		if(empty($context_id)) {
 			// Pull the latest record
 			list($results) = DAO_CallEntry::search(
 				array(),
@@ -43,29 +43,31 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 			
 			$result = array_shift($results);
 			
-			$call_id = $result[SearchFields_CallEntry::ID];
+			$context_id = $result[SearchFields_CallEntry::ID];
 		}
 		
 		return new Model_DevblocksEvent(
 			$this->_event_id,
 			array(
-				'call_id' => $call_id,
+				'context_id' => $context_id,
 			)
 		);
 	}
 	
-	function setEvent(Model_DevblocksEvent $event_model=null) {
+	function setEvent(Model_DevblocksEvent $event_model=null, Model_TriggerEvent $trigger=null) {
 		$labels = array();
 		$values = array();
 
+		// We can accept a model object or a context_id
+		@$model = $event_model->params['context_model'] ?: $event_model->params['context_id'];
+		
 		/**
 		 * Call
 		 */
 		
-		@$call_id = $event_model->params['call_id'];
 		$call_labels = array();
 		$call_values = array();
-		CerberusContexts::getContext(CerberusContexts::CONTEXT_CALL, $call_id, $call_labels, $call_values, null, true);
+		CerberusContexts::getContext(CerberusContexts::CONTEXT_CALL, $model, $call_labels, $call_values, null, true);
 
 			// Merge
 			CerberusContexts::merge(
@@ -87,7 +89,7 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 	
 	function renderSimulatorTarget($trigger, $event_model) {
 		$context = CerberusContexts::CONTEXT_CALL;
-		$context_id = $event_model->params['call_id'];
+		$context_id = $event_model->params['context_id'];
 		DevblocksEventHelper::renderSimulatorTarget($context, $context_id, $trigger, $event_model);
 	}
 	
@@ -111,8 +113,8 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 		return $vals_to_ctx;
 	}
 	
-	function getConditionExtensions() {
-		$labels = $this->getLabels();
+	function getConditionExtensions(Model_TriggerEvent $trigger) {
+		$labels = $this->getLabels($trigger);
 		$types = $this->getTypes();
 		
 		$labels['call_link'] = 'Call is linked';
@@ -225,7 +227,7 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 		return $pass;
 	}
 	
-	function getActionExtensions() {
+	function getActionExtensions(Model_TriggerEvent $trigger) {
 		$actions =
 			array(
 				'add_watchers' => array('label' =>'Add watchers'),
@@ -236,7 +238,7 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 				'send_email' => array('label' => 'Send email'),
 				'set_links' => array('label' => 'Set links'),
 			)
-			+ DevblocksEventHelper::getActionCustomFieldsFromLabels($this->getLabels())
+			+ DevblocksEventHelper::getActionCustomFieldsFromLabels($this->getLabels($trigger))
 			;
 			
 		return $actions;
@@ -249,7 +251,7 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 		if(!is_null($seq))
 			$tpl->assign('namePrefix','action'.$seq);
 
-		$labels = $this->getLabels();
+		$labels = $this->getLabels($trigger);
 		$tpl->assign('token_labels', $labels);
 			
 		switch($token) {
