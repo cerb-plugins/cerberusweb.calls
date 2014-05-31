@@ -327,13 +327,17 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 		$values_to_contexts = $event->getValuesContexts($trigger);
 		$tpl->assign('values_to_contexts', $values_to_contexts);
 		
-		$custom_fields = DAO_CustomField::getByContext(CerberusContexts::CONTEXT_CALL);
+		$custom_fields = DAO_CustomField::getByContext(CerberusContexts::CONTEXT_CALL, false);
 		$tpl->assign('custom_fields', $custom_fields);
 
 		if(false != ($params = $tpl->getVariable('params'))) {
 			$params = $params->value;
+
 			$custom_field_values = DevblocksEventHelper::getCustomFieldValuesFromParams($params);
 			$tpl->assign('custom_field_values', $custom_field_values);
+			
+			$custom_fieldsets_linked = DevblocksEventHelper::getCustomFieldsetsFromParams($params);
+			$tpl->assign('custom_fieldsets_linked', $custom_fieldsets_linked);
 		}
 		
 		$tpl->display('devblocks:cerberusweb.calls::calls/events/action_create_call.tpl');
