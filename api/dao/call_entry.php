@@ -1088,9 +1088,8 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 
 		// Comments
 		$comments = DAO_Comment::getByContext(CerberusContexts::CONTEXT_CALL, $id);
-		$last_comment = array_shift($comments);
-		unset($comments);
-		$tpl->assign('last_comment', $last_comment);
+		$comments = array_reverse($comments, true);
+		$tpl->assign('comments', $comments);
 		
 		$tpl->display('devblocks:cerberusweb.calls::calls/ajax/peek.tpl');
 	}
