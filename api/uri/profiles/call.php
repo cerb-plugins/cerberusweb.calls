@@ -95,6 +95,21 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 		$properties_custom_fieldsets = Page_Profiles::getProfilePropertiesCustomFieldsets(CerberusContexts::CONTEXT_CALL, $call->id, $values);
 		$tpl->assign('properties_custom_fieldsets', $properties_custom_fieldsets);
 		
+		// Link counts
+		
+		$properties_links = array(
+			CerberusContexts::CONTEXT_CALL => array(
+				$call->id => 
+					DAO_ContextLink::getContextLinkCounts(
+						CerberusContexts::CONTEXT_CALL,
+						$call->id,
+						array(CerberusContexts::CONTEXT_WORKER, CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
+					),
+			),
+		);
+		
+		$tpl->assign('properties_links', $properties_links);
+		
 		// Properties
 		
 		$tpl->assign('properties', $properties);
