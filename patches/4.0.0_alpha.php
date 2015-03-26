@@ -15,21 +15,21 @@ if(!isset($tables['call_entry'])) {
 			PRIMARY KEY (id)
 		) ENGINE=%s;
 	", APP_DB_ENGINE);
-	$db->Execute($sql);	
+	$db->ExecuteMaster($sql);	
 }
 
 list($columns, $indexes) = $db->metaTable('call_entry');
 
 if(!isset($indexes['created_date'])) {
-	$db->Execute('ALTER TABLE call_entry ADD INDEX created_date (created_date)');
+	$db->ExecuteMaster('ALTER TABLE call_entry ADD INDEX created_date (created_date)');
 }
 
 if(!isset($indexes['updated_date'])) {
-    $db->Execute('ALTER TABLE call_entry ADD INDEX updated_date (updated_date)');
+    $db->ExecuteMaster('ALTER TABLE call_entry ADD INDEX updated_date (updated_date)');
 }
 
 if(!isset($indexes['is_outgoing'])) {
-    $db->Execute('ALTER TABLE call_entry ADD INDEX is_outgoing (is_outgoing)');
+    $db->ExecuteMaster('ALTER TABLE call_entry ADD INDEX is_outgoing (is_outgoing)');
 }
 
 return TRUE;

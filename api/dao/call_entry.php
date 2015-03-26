@@ -30,7 +30,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 		$sql = sprintf("INSERT INTO call_entry () ".
 			"VALUES ()"
 		);
-		$db->Execute($sql);
+		$db->ExecuteMaster($sql);
 		$id = $db->LastInsertId();
 		
 		self::update($id, $fields);
@@ -106,7 +106,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			"FROM call_entry ".
 			(!empty($where) ? sprintf("WHERE %s ",$where) : "").
 			"ORDER BY updated_date desc";
-		$rs = $db->Execute($sql);
+		$rs = $db->ExecuteSlave($sql);
 		
 		return self::_getObjectsFromResult($rs);
 	}
@@ -174,7 +174,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 		
 		$ids_list = implode(',', $ids);
 		
-		$db->Execute(sprintf("DELETE FROM call_entry WHERE id IN (%s)", $ids_list));
+		$db->ExecuteMaster(sprintf("DELETE FROM call_entry WHERE id IN (%s)", $ids_list));
 		
 		// Fire event
 		$eventMgr = DevblocksPlatform::getEventService();
@@ -299,7 +299,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 					$db = DevblocksPlatform::getDatabaseService();
 					$temp_table = sprintf("_tmp_%s", uniqid());
 					
-					$db->Execute(sprintf("CREATE TEMPORARY TABLE %s SELECT DISTINCT context_id AS id FROM comment INNER JOIN %s ON (%s.id=comment.id)",
+					$db->ExecuteSlave(sprintf("CREATE TEMPORARY TABLE %s (PRIMARY KEY (id)) SELECT DISTINCT context_id AS id FROM comment INNER JOIN %s ON (%s.id=comment.id)",
 						$temp_table,
 						$ids,
 						$ids
@@ -375,7 +375,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			// We can skip counting if we have a less-than-full single page
 			if(!(0 == $page && $total < $limit)) {
 				$count_sql = "SELECT count(*) " . $join_sql . $where_sql;
-				$total = $db->GetOne($count_sql);
+				$total = $db->GetOneSlave($count_sql);
 			}
 		}
 		
@@ -1139,7 +1139,6 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		$view->renderFilters = false;
 		$view->renderTemplate = 'contextlinks_chooser';
 		
-		C4_AbstractViewLoader::setView($view_id, $view);
 		return $view;
 	}
 	
@@ -1164,7 +1163,6 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		$view->addParamsRequired($params_req, true);
 		
 		$view->renderTemplate = 'context';
-		C4_AbstractViewLoader::setView($view_id, $view);
 		return $view;
 	}
 	
