@@ -961,6 +961,7 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 			'id' => $call->id,
 			'name' => $call->subject,
 			'permalink' => $url,
+			'updated' => $call->updated_date,
 		);
 	}
 	
@@ -1166,7 +1167,7 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 		return $view;
 	}
 	
-	function renderPeekPopup($context_id=0, $view_id='') {
+	function renderPeekPopup($context_id=0, $view_id='', $edit=false) {
 		$id = $context_id; // [TODO] Rename below and remove
 		
 		$tpl = DevblocksPlatform::getTemplateService();
