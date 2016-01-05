@@ -432,6 +432,9 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 			}
 		}
 		
+		// Set object variable
+		$out .= DevblocksEventHelper::simulateActionCreateRecordSetVariable($params, $dict);
+		
 		return $out;
 	}
 	
@@ -504,6 +507,8 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 				}
 			}
 		}
+		// Set object variable
+		DevblocksEventHelper::runActionCreateRecordSetVariable(CerberusContexts::CONTEXT_CALL, $call_id, $params, $dict);
 
 		return $call_id;
 	}
