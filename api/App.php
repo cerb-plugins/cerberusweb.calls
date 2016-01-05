@@ -371,28 +371,6 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 		
 		$out .= "\n";
 		
-		// On
-
-		$trigger = $dict->_trigger;
-		$event = $trigger->getEvent();
-		
-		@$on = DevblocksPlatform::importVar($params['on'],'string',$default_on);
-		
-		if(!empty($on)) {
-			$on_result = DevblocksEventHelper::onContexts($on, $event->getValuesContexts($trigger), $dict);
-			@$on_objects = $on_result['objects'];
-			
-			if(is_array($on_objects)) {
-				$out .= ">>> On:\n";
-				
-				foreach($on_objects as $on_object) {
-					$on_object_context = Extension_DevblocksContext::get($on_object->_context);
-					$out .= ' * (' . $on_object_context->manifest->name . ') ' . $on_object->_label . "\n";
-				}
-				$out .= "\n";
-			}
-		}
-		
 		// Watchers
 		if(is_array($watcher_worker_ids) && !empty($watcher_worker_ids)) {
 			$out .= ">>> Adding watchers to call:\n";
@@ -423,13 +401,8 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 		}
 		
 		// Connection
-		if(!empty($context) && !empty($context_id)) {
-			if(null != ($ctx = Extension_DevblocksContext::get($context, true))) {
-				$meta = $ctx->getMeta($context_id);
-				$out .= ">>> Linking new call to:\n";
-				$out .= ' * (' . $ctx->manifest->name . ') ' . $meta['name'] . "\n";
-				$out .= "\n";
-			}
+		$out .= DevblocksEventHelper::simulateActionCreateRecordSetLinks($params, $dict);
+		
 		}
 		
 		// Set object variable
@@ -456,57 +429,44 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 		if(empty($created))
 			$created = time();
 		
-		// On
-
 		$trigger = $dict->_trigger;
-		$event = $trigger->getEvent();
 		
-		@$on = DevblocksPlatform::importVar($params['on'],'string',$default_on);
+		$fields = array(
+			DAO_CallEntry::SUBJECT => $subject,
+			DAO_CallEntry::PHONE => $phone,
+			DAO_CallEntry::CREATED_DATE => $created,
+			DAO_CallEntry::UPDATED_DATE => time(),
+			DAO_CallEntry::IS_CLOSED => $is_closed ? 1 : 0,
+			DAO_CallEntry::IS_OUTGOING => $is_outgoing ? 1 : 0,
+		);
 		
-		if(!empty($on)) {
-			$on_result = DevblocksEventHelper::onContexts($on, $event->getValuesContexts($trigger), $dict);
-			@$on_objects = $on_result['objects'];
-			
-			if(is_array($on_objects)) {
-				foreach($on_objects as $on_object) {
-					$fields = array(
-						DAO_CallEntry::SUBJECT => $subject,
-						DAO_CallEntry::PHONE => $phone,
-						DAO_CallEntry::CREATED_DATE => $created,
-						DAO_CallEntry::UPDATED_DATE => time(),
-						DAO_CallEntry::IS_CLOSED => $is_closed ? 1 : 0,
-						DAO_CallEntry::IS_OUTGOING => $is_outgoing ? 1 : 0,
-					);
-					
-					if(false == ($call_id = DAO_CallEntry::create($fields)))
-						return false;
-					
-					// Custom fields
-					DevblocksEventHelper::runActionCreateRecordSetCustomFields(CerberusContexts::CONTEXT_CALL, $call_id, $params, $dict);
-					
-					// Watchers
-					if(is_array($watcher_worker_ids) && !empty($watcher_worker_ids)) {
-						CerberusContexts::addWatchers(CerberusContexts::CONTEXT_CALL, $call_id, $watcher_worker_ids);
-					}
-					
-					// Comment content
-					if(!empty($comment)) {
-						$fields = array(
-							DAO_Comment::OWNER_CONTEXT => CerberusContexts::CONTEXT_VIRTUAL_ATTENDANT,
-							DAO_Comment::OWNER_CONTEXT_ID => $trigger->virtual_attendant_id,
-							DAO_Comment::COMMENT => $comment,
-							DAO_Comment::CONTEXT => CerberusContexts::CONTEXT_CALL,
-							DAO_Comment::CONTEXT_ID => $call_id,
-							DAO_Comment::CREATED => time(),
-						);
-						DAO_Comment::create($fields, $notify_worker_ids);
-					}
-					
-					// Connection
-					DAO_ContextLink::setLink(CerberusContexts::CONTEXT_CALL, $call_id, $on_object->_context, $on_object->id);
-				}
-			}
+		if(false == ($call_id = DAO_CallEntry::create($fields)))
+			return false;
+		
+		// Custom fields
+		DevblocksEventHelper::runActionCreateRecordSetCustomFields(CerberusContexts::CONTEXT_CALL, $call_id, $params, $dict);
+		
+		// Watchers
+		if(is_array($watcher_worker_ids) && !empty($watcher_worker_ids)) {
+			CerberusContexts::addWatchers(CerberusContexts::CONTEXT_CALL, $call_id, $watcher_worker_ids);
 		}
+		
+		// Comment content
+		if(!empty($comment)) {
+			$fields = array(
+				DAO_Comment::OWNER_CONTEXT => CerberusContexts::CONTEXT_VIRTUAL_ATTENDANT,
+				DAO_Comment::OWNER_CONTEXT_ID => $trigger->virtual_attendant_id,
+				DAO_Comment::COMMENT => $comment,
+				DAO_Comment::CONTEXT => CerberusContexts::CONTEXT_CALL,
+				DAO_Comment::CONTEXT_ID => $call_id,
+				DAO_Comment::CREATED => time(),
+			);
+			DAO_Comment::create($fields, $notify_worker_ids);
+		}
+		
+		// Links
+		DevblocksEventHelper::runActionCreateRecordSetLinks(CerberusContexts::CONTEXT_CALL, $call_id, $params, $dict);
+		
 		// Set object variable
 		DevblocksEventHelper::runActionCreateRecordSetVariable(CerberusContexts::CONTEXT_CALL, $call_id, $params, $dict);
 

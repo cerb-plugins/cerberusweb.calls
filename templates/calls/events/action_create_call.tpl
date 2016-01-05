@@ -1,14 +1,3 @@
-{if !empty($values_to_contexts)}
-<b>On:</b>
-<div style="margin-left:10px;margin-bottom:0.5em;">
-<select name="{$namePrefix}[on]">
-	{foreach from=$values_to_contexts item=context_data key=val_key}
-	<option value="{$val_key}" context="{$context_data.context}" {if $params.on == $val_key}selected="selected"{/if}>{$context_data.label}</option>
-	{/foreach}
-</select>
-</div>
-{/if}
-
 <b>Type:</b>
 <div style="margin-left:10px;margin-bottom:0.5em;">
 	<label><input type="radio" name="{$namePrefix}[is_outgoing]" value="1" {if $params.is_outgoing}checked="checked"{/if}> Outgoing</label>
@@ -59,6 +48,13 @@
 <div style="margin-left:10px;margin-bottom:0.5em;">
 	{include file="devblocks:cerberusweb.core::internal/decisions/actions/_shared_var_worker_picker.tpl" param_name="worker_id" values_to_contexts=$values_to_contexts}
 </div>
+
+{if !empty($values_to_contexts)}
+<b>Link to:</b>
+<div style="margin-left:10px;margin-bottom:0.5em;">
+{include file="devblocks:cerberusweb.core::internal/decisions/actions/_shared_var_picker.tpl" param_name="link_to" values_to_contexts=$values_to_contexts}
+</div>
+{/if}
 
 {* Check for object variables *}
 {capture name="object_vars"}
