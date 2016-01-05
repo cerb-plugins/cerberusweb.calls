@@ -41,20 +41,6 @@
 			</td>
 		</tr>
 		
-		{* Watchers *}
-		<tr>
-			<td width="0%" nowrap="nowrap" valign="top" align="right">{'common.watchers'|devblocks_translate|capitalize}: </td>
-			<td width="100%">
-				{if empty($model->id)}
-					<button type="button" class="chooser_watcher"><span class="glyphicons glyphicons-search"></span></button>
-					<ul class="chooser-container bubbles" style="display:block;"></ul>
-				{else}
-					{$object_watchers = DAO_ContextLink::getContextLinks(CerberusContexts::CONTEXT_CALL, array($model->id), CerberusContexts::CONTEXT_WORKER)}
-					{include file="devblocks:cerberusweb.core::internal/watchers/context_follow_button.tpl" context=CerberusContexts::CONTEXT_CALL context_id=$model->id full=true}
-				{/if}
-			</td>
-		</tr>
-
 	</table>
 </fieldset>
 
@@ -87,24 +73,13 @@
 </form>
 
 <script type="text/javascript">
+$(function() {
 	var $popup = genericAjaxPopupFetch('peek');
 	
 	$popup.one('popup_open', function(event,ui) {
 		var $textarea = $(this).find('textarea[name=comment]');
 		
-		$(this).dialog('option','title',"{'calls.ui.log_call'|devblocks_translate|escape:'javascript' nofilter}");
-		
-		$(this).find('button.chooser_watcher').each(function() {
-			ajax.chooser(this,'cerberusweb.contexts.worker','add_watcher_ids', { autocomplete:true });
-		});
-		
-		ajax.orgAutoComplete('#orginput');
-		
-		ajax.emailAutoComplete('#emailinput');
-		
-		$('#frmCallEntry button.chooser_worker').each(function() {
-			ajax.chooser(this,'cerberusweb.contexts.worker','worker_id', { autocomplete:true });
-		});
+		$popup.dialog('option','title',"{'calls.ui.log_call'|devblocks_translate|escape:'javascript' nofilter}");
 		
 		// @mentions
 		
@@ -119,4 +94,5 @@
 			limit: 10
 		});
 	});
+});
 </script>

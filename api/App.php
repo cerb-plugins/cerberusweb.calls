@@ -78,12 +78,9 @@ class CallsPage extends CerberusPageExtension {
 					DAO_CallEntry::IS_OUTGOING => $is_outgoing,
 					DAO_CallEntry::IS_CLOSED => $is_closed,
 				);
-				$id = DAO_CallEntry::create($fields);
 				
-				// Watchers
-				@$add_watcher_ids = DevblocksPlatform::sanitizeArray(DevblocksPlatform::importGPC($_REQUEST['add_watcher_ids'],'array',array()),'integer',array('unique','nonzero'));
-				if(!empty($add_watcher_ids))
-					CerberusContexts::addWatchers(CerberusContexts::CONTEXT_CALL, $id, $add_watcher_ids);
+				if(false == ($id = DAO_CallEntry::create($fields)))
+					return false;
 				
 				// Context Link (if given)
 				@$link_context = DevblocksPlatform::importGPC($_REQUEST['link_context'],'string','');
@@ -328,19 +325,10 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 		$values_to_contexts = $event->getValuesContexts($trigger);
 		$tpl->assign('values_to_contexts', $values_to_contexts);
 		
-		$custom_fields = DAO_CustomField::getByContext(CerberusContexts::CONTEXT_CALL, false);
-		$tpl->assign('custom_fields', $custom_fields);
-
-		if(false != ($params = $tpl->getVariable('params'))) {
-			$params = $params->value;
-
-			$custom_field_values = DevblocksEventHelper::getCustomFieldValuesFromParams($params);
-			$tpl->assign('custom_field_values', $custom_field_values);
-			
-			$custom_fieldsets_linked = DevblocksEventHelper::getCustomFieldsetsFromParams($params);
-			$tpl->assign('custom_fieldsets_linked', $custom_fieldsets_linked);
-		}
+		// Custom fields
+		DevblocksEventHelper::renderActionCreateRecordSetCustomFields(CerberusContexts::CONTEXT_CALL, $tpl);
 		
+		// Template
 		$tpl->display('devblocks:cerberusweb.calls::calls/events/action_create_call.tpl');
 	}
 	
@@ -377,42 +365,9 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 			(!empty($created) ? date("Y-m-d h:ia", $created) : 'none'),
 			$params['created']
 		);
-
-		$workers = DAO_Worker::getAll();
-		$custom_fields = DAO_CustomField::getAll();
-		$custom_field_values = DevblocksEventHelper::getCustomFieldValuesFromParams($params);
 		
-		foreach($custom_field_values as $cf_id => $val) {
-			if(!isset($custom_fields[$cf_id]))
-				continue;
-			
-			if(is_null($val))
-				continue;
-			
-			if(is_array($val))
-				$val = implode('; ', $val);
-			
-			switch($custom_fields[$cf_id]->type) {
-				case Model_CustomField::TYPE_WORKER:
-					if(!empty($val) && !is_numeric($val)) {
-						if(isset($dict->$val)) {
-							$val = $dict->$val;
-						}
-					}
-			
-					if(isset($workers[$val])) {
-						$set_worker = $workers[$val];
-						$val = $set_worker->getName();
-					}
-					break;
-						
-				default:
-					$val = $tpl_builder->build($val, $dict);
-					break;
-			}
-				
-			$out .= $custom_fields[$cf_id]->name . ': ' . $val . "\n";
-		}
+		// Custom fields
+		$out .= DevblocksEventHelper::simulateActionCreateRecordSetCustomFields($params, $dict);
 		
 		$out .= "\n";
 		
@@ -519,32 +474,12 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 						DAO_CallEntry::IS_CLOSED => $is_closed ? 1 : 0,
 						DAO_CallEntry::IS_OUTGOING => $is_outgoing ? 1 : 0,
 					);
-					$call_id = DAO_CallEntry::create($fields);
+					
+					if(false == ($call_id = DAO_CallEntry::create($fields)))
+						return false;
 					
 					// Custom fields
-					$worker = DAO_Worker::getAll();
-					$custom_fields = DAO_CustomField::getAll();
-					$custom_field_values = DevblocksEventHelper::getCustomFieldValuesFromParams($params);
-					
-					if(is_array($custom_field_values))
-					foreach($custom_field_values as $cf_id => $val) {
-						switch($custom_fields[$cf_id]->type) {
-							case Model_CustomField::TYPE_WORKER:
-								if(!empty($val) && !is_numeric($val)) {
-									if(isset($dict->$val)) {
-										$val = $dict->$val;
-									}
-								}
-								break;
-									
-							default:
-								if(is_string($val))
-									$val = $tpl_builder->build($val, $dict);
-									break;
-						}
-				
-						DAO_CustomFieldValue::formatAndSetFieldValues(CerberusContexts::CONTEXT_CALL, $call_id, array($cf_id => $val));
-					}
+					DevblocksEventHelper::runActionCreateRecordSetCustomFields(CerberusContexts::CONTEXT_CALL, $call_id, $params, $dict);
 					
 					// Watchers
 					if(is_array($watcher_worker_ids) && !empty($watcher_worker_ids)) {

@@ -147,7 +147,7 @@
 				<name>WgmCalls_EventActionPost</name>
 			</class>
 			<params>
-				<param key="label" value="Create a call" />
+				<param key="label" value="Create call" />
 				<param key="events">
 					<value>
 						<data key="*" />
