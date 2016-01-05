@@ -56,6 +56,12 @@
 </div>
 {/if}
 
+<b>Also create records in simulator mode:</b>
+<div style="margin-left:10px;margin-bottom:10px;">
+	<label><input type="radio" name="{$namePrefix}[run_in_simulator]" value="1" {if $params.run_in_simulator}checked="checked"{/if}> {'common.yes'|devblocks_translate|capitalize}</label>
+	<label><input type="radio" name="{$namePrefix}[run_in_simulator]" value="0" {if !$params.run_in_simulator}checked="checked"{/if}> {'common.no'|devblocks_translate|capitalize}</label>
+</div>
+
 {* Check for object variables *}
 {capture name="object_vars"}
 {foreach from=$trigger->variables item=var key=var_key}

@@ -403,6 +403,11 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 		// Connection
 		$out .= DevblocksEventHelper::simulateActionCreateRecordSetLinks($params, $dict);
 		
+
+		// Run in simulator
+		@$run_in_simulator = !empty($params['run_in_simulator']);
+		if($run_in_simulator) {
+			$this->run($token, $trigger, $params, $dict);
 		}
 		
 		// Set object variable
