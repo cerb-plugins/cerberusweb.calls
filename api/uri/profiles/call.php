@@ -50,31 +50,31 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 		$properties = array();
 			
 		$properties['is_closed'] = array(
-			'label' => ucfirst($translate->_('call_entry.model.is_closed')),
+			'label' => mb_ucfirst($translate->_('common.is_closed')),
 			'type' => Model_CustomField::TYPE_CHECKBOX,
 			'value' => $call->is_closed,
 		);
 			
 		$properties['is_outgoing'] = array(
-			'label' => ucfirst($translate->_('call_entry.model.is_outgoing')),
+			'label' => mb_ucfirst($translate->_('call_entry.model.is_outgoing')),
 			'type' => Model_CustomField::TYPE_CHECKBOX,
 			'value' => $call->is_outgoing,
 		);
 			
 		$properties['phone'] = array(
-			'label' => ucfirst($translate->_('call_entry.model.phone')),
+			'label' => mb_ucfirst($translate->_('call_entry.model.phone')),
 			'type' => Model_CustomField::TYPE_SINGLE_LINE,
 			'value' => $call->phone,
 		);
 			
 		$properties['created'] = array(
-			'label' => ucfirst($translate->_('common.created')),
+			'label' => mb_ucfirst($translate->_('common.created')),
 			'type' => Model_CustomField::TYPE_DATE,
 			'value' => $call->created_date,
 		);
 			
 		$properties['updated'] = array(
-			'label' => ucfirst($translate->_('common.updated')),
+			'label' => mb_ucfirst($translate->_('common.updated')),
 			'type' => Model_CustomField::TYPE_DATE,
 			'value' => $call->updated_date,
 		);

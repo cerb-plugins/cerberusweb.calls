@@ -29,9 +29,7 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 			// Pull the latest record
 			list($results) = DAO_CallEntry::search(
 				array(),
-				array(
-					//new DevblocksSearchCriteria(SearchFields_Task::IS_CLOSED,'=',0),
-				),
+				array(),
 				10,
 				0,
 				SearchFields_CallEntry::ID,

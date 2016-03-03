@@ -136,6 +136,9 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 	static private function _getObjectsFromResult($rs) {
 		$objects = array();
 		
+		if(!($rs instanceof mysqli_result))
+			return false;
+		
 		while($row = mysqli_fetch_assoc($rs)) {
 			$object = new Model_CallEntry();
 			$object->id = $row['id'];
@@ -356,7 +359,11 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			($has_multiple_values ? 'GROUP BY c.id ' : '').
 			$sort_sql;
 		
-		$rs = $db->SelectLimit($sql,$limit,$page*$limit) or die(__CLASS__ . '('.__LINE__.')'. ':' . $db->ErrorMsg());
+		if(false == ($rs = $db->SelectLimit($sql,$limit,$page*$limit)))
+			return false;
+		
+		if(!($rs instanceof mysqli_result))
+			return false;
 		
 		$results = array();
 		
@@ -426,7 +433,7 @@ class SearchFields_CallEntry {
 			self::CREATED_DATE => new DevblocksSearchField(self::CREATED_DATE, 'c', 'created_date', $translate->_('common.created'), Model_CustomField::TYPE_DATE, true),
 			self::UPDATED_DATE => new DevblocksSearchField(self::UPDATED_DATE, 'c', 'updated_date', $translate->_('common.updated'), Model_CustomField::TYPE_DATE, true),
 			self::IS_OUTGOING => new DevblocksSearchField(self::IS_OUTGOING, 'c', 'is_outgoing', $translate->_('call_entry.model.is_outgoing'), Model_CustomField::TYPE_CHECKBOX, true),
-			self::IS_CLOSED => new DevblocksSearchField(self::IS_CLOSED, 'c', 'is_closed', $translate->_('call_entry.model.is_closed'), Model_CustomField::TYPE_CHECKBOX, true),
+			self::IS_CLOSED => new DevblocksSearchField(self::IS_CLOSED, 'c', 'is_closed', $translate->_('common.is_closed'), Model_CustomField::TYPE_CHECKBOX, true),
 			
 			self::CONTEXT_LINK => new DevblocksSearchField(self::CONTEXT_LINK, 'context_link', 'from_context', null, null, false),
 			self::CONTEXT_LINK_ID => new DevblocksSearchField(self::CONTEXT_LINK_ID, 'context_link', 'from_context_id', null, null, false),
@@ -1020,7 +1027,7 @@ class Context_Call extends Extension_DevblocksContext implements IDevblocksConte
 			'_label' => $prefix,
 			'id' => $prefix.$translate->_('common.id'),
 			'created' => $prefix.$translate->_('common.created'),
-			'is_closed' => $prefix.$translate->_('call_entry.model.is_closed'),
+			'is_closed' => $prefix.$translate->_('common.is_closed'),
 			'is_outgoing' => $prefix.$translate->_('call_entry.model.is_outgoing'),
 			'phone' => $prefix.$translate->_('call_entry.model.phone'),
 			'subject' => $prefix.$translate->_('message.header.subject'),
