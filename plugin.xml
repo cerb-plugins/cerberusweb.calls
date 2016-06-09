@@ -4,7 +4,7 @@
 	<name>Call Logging</name>
 	<description>This plugin adds a new Call record type for logging incoming and outgoing phone activity.</description>
 	<author>Webgroup Media, LLC.</author>
-	<version>1.1.0</version>
+	<version>1.1.1</version>
 	<link>http://www.cerbweb.com/book/latest/plugins/cerberusweb.calls.html</link>
 	<image>plugin.png</image>
 	
@@ -90,7 +90,7 @@
 			<name>Call</name>
 			<class>
 				<file>api/dao/call_entry.php</file>
-				<name>Context_Call</name>
+				<name>Context_CallEntry</name>
 			</class>
 			<params>
 				<param key="names">

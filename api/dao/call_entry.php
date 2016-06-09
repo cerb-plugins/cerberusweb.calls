@@ -553,6 +553,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 	function getSubtotalCounts($column) {
 		$counts = array();
 		$fields = $this->getFields();
+		$context = CerberusContexts::CONTEXT_CALL;
 
 		if(!isset($fields[$column]))
 			return array();
@@ -560,25 +561,25 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 		switch($column) {
 			case SearchFields_CallEntry::IS_CLOSED:
 			case SearchFields_CallEntry::IS_OUTGOING:
-				$counts = $this->_getSubtotalCountForBooleanColumn('DAO_CallEntry', $column);
+				$counts = $this->_getSubtotalCountForBooleanColumn($context, $column);
 				break;
 
 			case SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK:
-				$counts = $this->_getSubtotalCountForContextLinkColumn('DAO_CallEntry', CerberusContexts::CONTEXT_CALL, $column);
+				$counts = $this->_getSubtotalCountForContextLinkColumn($context, $column);
 				break;
 				
 			case SearchFields_CallEntry::VIRTUAL_HAS_FIELDSET:
-				$counts = $this->_getSubtotalCountForHasFieldsetColumn('DAO_CallEntry', CerberusContexts::CONTEXT_CALL, $column);
+				$counts = $this->_getSubtotalCountForHasFieldsetColumn($context, $column);
 				break;
 				
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
-				$counts = $this->_getSubtotalCountForWatcherColumn('DAO_CallEntry', $column);
+				$counts = $this->_getSubtotalCountForWatcherColumn($context, $column);
 				break;
 			
 			default:
 				// Custom fields
 				if('cf_' == substr($column,0,3)) {
-					$counts = $this->_getSubtotalCountForCustomColumn('DAO_CallEntry', $column, 'c.id');
+					$counts = $this->_getSubtotalCountForCustomColumn($context, $column);
 				}
 				
 				break;
@@ -930,7 +931,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 	}
 };
 
-class Context_Call extends Extension_DevblocksContext implements IDevblocksContextProfile, IDevblocksContextPeek, IDevblocksContextImport {
+class Context_CallEntry extends Extension_DevblocksContext implements IDevblocksContextProfile, IDevblocksContextPeek, IDevblocksContextImport {
 	function getRandom() {
 		return DAO_CallEntry::random();
 	}
