@@ -27,8 +27,8 @@
 		{devblocks_url assign=return_url full=true}c=profiles&type=call&id={$page_context_id}-{$call->subject|devblocks_permalink}{/devblocks_url}
 		{include file="devblocks:cerberusweb.core::internal/macros/display/button.tpl" context=$page_context context_id=$page_context_id macros=$macros return_url=$return_url}		
 		
-		<!-- Edit -->		
-		<button type="button" id="btnDisplayCallEdit" title="{'common.edit'|devblocks_translate|capitalize}"><span class="glyphicons glyphicons-cogwheel"></span></button>
+		<!-- Edit -->
+		<button type="button" id="btnDisplayCallEdit" title="{'common.edit'|devblocks_translate|capitalize} (E)" class="cerb-peek-trigger" data-context="{$page_context}" data-context-id="{$page_context_id}" data-edit="true"><span class="glyphicons glyphicons-cogwheel"></span></button>
 	</form>
 	
 	{if $pref_keyboard_shortcuts}
@@ -76,11 +76,10 @@
 
 <div id="profileCallTabs">
 	<ul>
-		{$tabs = [activity,comments,links]}
+		{$tabs = [activity,comments]}
 
-		<li><a href="{devblocks_url}ajax.php?c=internal&a=showTabActivityLog&scope=target&point={$point}&context={$page_context}&context_id={$page_context_id}{/devblocks_url}">{'common.activity_log'|devblocks_translate|capitalize}</a></li>
+		<li><a href="{devblocks_url}ajax.php?c=internal&a=showTabActivityLog&scope=target&point={$point}&context={$page_context}&context_id={$page_context_id}{/devblocks_url}">{'common.log'|devblocks_translate|capitalize}</a></li>
 		<li><a href="{devblocks_url}ajax.php?c=internal&a=showTabContextComments&point={$point}&context=cerberusweb.contexts.call&id={$page_context_id}{/devblocks_url}">{'common.comments'|devblocks_translate|capitalize} <div class="tab-badge">{DAO_Comment::count($page_context, $page_context_id)|default:0}</div></a></li>		
-		<li><a href="{devblocks_url}ajax.php?c=internal&a=showTabContextLinks&point={$point}&context=cerberusweb.contexts.call&id={$page_context_id}{/devblocks_url}">{'common.links'|devblocks_translate} <div class="tab-badge">{DAO_ContextLink::count($page_context, $page_context_id)|default:0}</div></a></li>		
 
 		{foreach from=$tab_manifests item=tab_manifest}
 			{$tabs[] = $tab_manifest->params.uri}
@@ -97,14 +96,24 @@ $(function() {
 	
 	var tabs = $("#profileCallTabs").tabs(tabOptions);
 	
-	$('#btnDisplayCallEdit').bind('click', function() {
-		$popup = genericAjaxPopup('peek','c=internal&a=showPeekPopup&context={$page_context}&context_id={$page_context_id}',null,false,'50%');
-		$popup.one('call_save', function(event) {
-			event.stopPropagation();
+	// Edit
+	
+	$('#btnDisplayCallEdit')
+		.cerbPeekTrigger()
+		.on('cerb-peek-opened', function(e) {
+		})
+		.on('cerb-peek-saved', function(e) {
+			e.stopPropagation();
 			document.location.reload();
-		});
-	});
-
+		})
+		.on('cerb-peek-deleted', function(e) {
+			document.location.href = '{devblocks_url}{/devblocks_url}';
+			
+		})
+		.on('cerb-peek-closed', function(e) {
+		})
+		;
+	
 	{include file="devblocks:cerberusweb.core::internal/macros/display/menu_script.tpl" selector_button=null selector_menu=null}
 });
 </script>

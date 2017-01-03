@@ -275,11 +275,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			 );
 		
 		$join_sql =
-			"FROM call_entry c ".
-
-		// [JAS]: Dynamic table joins
-			(isset($tables['context_link']) ? "INNER JOIN context_link ON (context_link.to_context = 'cerberusweb.contexts.call' AND context_link.to_context_id = c.id) " : " ")
-			;
+			"FROM call_entry c ";
 		
 		$where_sql = "".
 			(!empty($wheres) ? sprintf("WHERE %s ",implode(' AND ',$wheres)) : "WHERE 1 ");
@@ -292,7 +288,6 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			'join_sql' => &$join_sql,
 			'where_sql' => &$where_sql,
 			'tables' => &$tables,
-			'has_multiple_values' => &$has_multiple_values
 		);
 		
 		array_walk_recursive(
@@ -306,7 +301,6 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			'select' => $select_sql,
 			'join' => $join_sql,
 			'where' => $where_sql,
-			'has_multiple_values' => $has_multiple_values,
 			'sort' => $sort_sql,
 		);
 		
@@ -324,11 +318,6 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 		$from_index = 'c.id';
 		
 		switch($param_key) {
-			case SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK:
-				$args['has_multiple_values'] = true;
-				self::_searchComponentsVirtualContextLinks($param, $from_context, $from_index, $args['join_sql'], $args['where_sql']);
-				break;
-			
 			case SearchFields_CallEntry::VIRTUAL_HAS_FIELDSET:
 				self::_searchComponentsVirtualHasFieldset($param, $from_context, $from_index, $args['join_sql'], $args['where_sql']);
 				break;
@@ -355,14 +344,12 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 		$select_sql = $query_parts['select'];
 		$join_sql = $query_parts['join'];
 		$where_sql = $query_parts['where'];
-		$has_multiple_values = $query_parts['has_multiple_values'];
 		$sort_sql = $query_parts['sort'];
 		
 		$sql =
 			$select_sql.
 			$join_sql.
 			$where_sql.
-			($has_multiple_values ? 'GROUP BY c.id ' : '').
 			$sort_sql;
 		
 		if(false == ($rs = $db->SelectLimit($sql,$limit,$page*$limit)))
@@ -414,10 +401,6 @@ class SearchFields_CallEntry extends DevblocksSearchFields {
 	const IS_OUTGOING = 'c_is_outgoing';
 	const IS_CLOSED = 'c_is_closed';
 	
-	// Context Links
-	const CONTEXT_LINK = 'cl_context_from';
-	const CONTEXT_LINK_ID = 'cl_context_from_id';
-	
 	// Comment Content
 	const FULLTEXT_COMMENT_CONTENT = 'ftcc_content';
 
@@ -442,6 +425,10 @@ class SearchFields_CallEntry extends DevblocksSearchFields {
 		switch($param->field) {
 			case self::FULLTEXT_COMMENT_CONTENT:
 				return self::_getWhereSQLFromCommentFulltextField($param, Search_CommentContent::ID, CerberusContexts::CONTEXT_CALL, self::getPrimaryKey());
+				break;
+				
+			case self::VIRTUAL_CONTEXT_LINK:
+				return self::_getWhereSQLFromContextLinksField($param, CerberusContexts::CONTEXT_CALL, self::getPrimaryKey());
 				break;
 				
 			case self::VIRTUAL_WATCHERS:
@@ -482,9 +469,6 @@ class SearchFields_CallEntry extends DevblocksSearchFields {
 			self::UPDATED_DATE => new DevblocksSearchField(self::UPDATED_DATE, 'c', 'updated_date', $translate->_('common.updated'), Model_CustomField::TYPE_DATE, true),
 			self::IS_OUTGOING => new DevblocksSearchField(self::IS_OUTGOING, 'c', 'is_outgoing', $translate->_('call_entry.model.is_outgoing'), Model_CustomField::TYPE_CHECKBOX, true),
 			self::IS_CLOSED => new DevblocksSearchField(self::IS_CLOSED, 'c', 'is_closed', $translate->_('common.is_closed'), Model_CustomField::TYPE_CHECKBOX, true),
-			
-			self::CONTEXT_LINK => new DevblocksSearchField(self::CONTEXT_LINK, 'context_link', 'from_context', null, null, false),
-			self::CONTEXT_LINK_ID => new DevblocksSearchField(self::CONTEXT_LINK_ID, 'context_link', 'from_context_id', null, null, false),
 			
 			self::VIRTUAL_CONTEXT_LINK => new DevblocksSearchField(self::VIRTUAL_CONTEXT_LINK, '*', 'context_link', $translate->_('common.links'), null, false),
 			self::VIRTUAL_HAS_FIELDSET => new DevblocksSearchField(self::VIRTUAL_HAS_FIELDSET, '*', 'has_fieldset', $translate->_('common.fieldset'), null, false),
@@ -530,8 +514,6 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 		);
 		$this->addColumnsHidden(array(
 			SearchFields_CallEntry::ID,
-			SearchFields_CallEntry::CONTEXT_LINK,
-			SearchFields_CallEntry::CONTEXT_LINK_ID,
 			SearchFields_CallEntry::FULLTEXT_COMMENT_CONTENT,
 			SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK,
 			SearchFields_CallEntry::VIRTUAL_HAS_FIELDSET,
@@ -540,8 +522,6 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 		
 		$this->addParamsHidden(array(
 			SearchFields_CallEntry::ID,
-			SearchFields_CallEntry::CONTEXT_LINK,
-			SearchFields_CallEntry::CONTEXT_LINK_ID,
 		));
 
 		$this->doResetCriteria();
@@ -665,6 +645,9 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 				array(
 					'type' => DevblocksSearchCriteria::TYPE_NUMBER,
 					'options' => array('param_key' => SearchFields_CallEntry::ID),
+					'examples' => [
+						['type' => 'chooser', 'context' => CerberusContexts::CONTEXT_CALL, 'q' => ''],
+					]
 				),
 			'isClosed' => 
 				array(
@@ -698,6 +681,10 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 				),
 		);
 		
+		// Add quick search links
+		
+		$fields = self::_appendVirtualFiltersFromQuickSearchContexts('links', $fields, 'links');
+		
 		// Add searchable custom fields
 		
 		$fields = self::_appendFieldsFromQuickSearchContext(CerberusContexts::CONTEXT_CALL, $fields, null);
@@ -729,6 +716,9 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 	function getParamFromQuickSearchFieldTokens($field, $tokens) {
 		switch($field) {
 			default:
+				if($field == 'links' || substr($field, 0, 6) == 'links.')
+					return DevblocksSearchCriteria::getContextLinksParamFromTokens($field, $tokens);
+				
 				$search_fields = $this->getQuickSearchFields();
 				return DevblocksSearchCriteria::getParamFromQueryFieldTokens($field, $tokens, $search_fields);
 				break;
@@ -893,6 +883,16 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 };
 
 class Context_CallEntry extends Extension_DevblocksContext implements IDevblocksContextProfile, IDevblocksContextPeek, IDevblocksContextImport {
+	static function isReadableByActor($models, $actor) {
+		// Everyone can view
+		return CerberusContexts::allowEverything($models);
+	}
+	
+	static function isWriteableByActor($models, $actor) {
+		// Everyone can modify
+		return CerberusContexts::allowEverything($models);
+	}
+	
 	function getRandom() {
 		return DAO_CallEntry::random();
 	}
@@ -1049,10 +1049,15 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 		
 		if(!$is_loaded) {
 			$labels = array();
-			CerberusContexts::getContext($context, $context_id, $labels, $values, null, true);
+			CerberusContexts::getContext($context, $context_id, $labels, $values, null, true, true);
 		}
 		
 		switch($token) {
+			case 'links':
+				$links = $this->_lazyLoadLinks($context, $context_id);
+				$values = array_merge($values, $fields);
+				break;
+			
 			case 'watchers':
 				$watchers = array(
 					$token => CerberusContexts::getWatchers($context, $context_id, true),
@@ -1061,7 +1066,7 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 				break;
 				
 			default:
-				if(substr($token,0,7) == 'custom_') {
+				if(DevblocksPlatform::strStartsWith($token, 'custom_')) {
 					$fields = $this->_lazyLoadCustomFields($token, $context, $context_id);
 					$values = array_merge($values, $fields);
 				}
@@ -1114,8 +1119,7 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 		
 		if(!empty($context) && !empty($context_id)) {
 			$params_req = array(
-				new DevblocksSearchCriteria(SearchFields_CallEntry::CONTEXT_LINK,'=',$context),
-				new DevblocksSearchCriteria(SearchFields_CallEntry::CONTEXT_LINK_ID,'=',$context_id),
+				new DevblocksSearchCriteria(SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK,'in',array($context.':'.$context_id)),
 			);
 		}
 		
@@ -1126,30 +1130,77 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 	}
 	
 	function renderPeekPopup($context_id=0, $view_id='', $edit=false) {
-		$id = $context_id; // [TODO] Rename below and remove
-		
 		$tpl = DevblocksPlatform::getTemplateService();
 		$tpl->assign('view_id', $view_id);
 		
-		if(!empty($id) && null != ($call = DAO_CallEntry::get($id))) {
-			$tpl->assign('model', $call);
+		$context = CerberusContexts::CONTEXT_CALL;
+		
+		if(!empty($context_id)) {
+			$model = DAO_CallEntry::get($context_id);
 		}
 		
-		$custom_fields = DAO_CustomField::getByContext(CerberusContexts::CONTEXT_CALL, false);
-		$tpl->assign('custom_fields', $custom_fields);
-		
-		if(!empty($id)) {
-			$custom_field_values = DAO_CustomFieldValue::getValuesByContextIds(CerberusContexts::CONTEXT_CALL, $id);
-			if(isset($custom_field_values[$id]))
-				$tpl->assign('custom_field_values', $custom_field_values[$id]);
-		}
+		if(empty($context_id) || $edit) {
+			if(isset($model))
+				$tpl->assign('model', $model);
+			
+			// Custom fields
+			$custom_fields = DAO_CustomField::getByContext($context, false);
+			$tpl->assign('custom_fields', $custom_fields);
+	
+			$custom_field_values = DAO_CustomFieldValue::getValuesByContextIds($context, $context_id);
+			if(isset($custom_field_values[$context_id]))
+				$tpl->assign('custom_field_values', $custom_field_values[$context_id]);
+			
+			$types = Model_CustomField::getTypes();
+			$tpl->assign('types', $types);
+			
+			// View
+			$tpl->assign('id', $context_id);
+			$tpl->assign('view_id', $view_id);
+			$tpl->display('devblocks:cerberusweb.calls::calls/ajax/peek_edit.tpl');
+			
+		} else {
+			// Counts
+			$activity_counts = array(
+				'comments' => DAO_Comment::count($context, $context_id),
+			);
+			$tpl->assign('activity_counts', $activity_counts);
+			
+			// Links
+			$links = array(
+				$context => array(
+					$context_id => 
+						DAO_ContextLink::getContextLinkCounts(
+							$context,
+							$context_id,
+							array(CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
+						),
+				),
+			);
+			$tpl->assign('links', $links);
+			
+			// Timeline
+			if($context_id) {
+				$timeline_json = Page_Profiles::getTimelineJson(Extension_DevblocksContext::getTimelineComments($context, $context_id));
+				$tpl->assign('timeline_json', $timeline_json);
+			}
 
-		// Comments
-		$comments = DAO_Comment::getByContext(CerberusContexts::CONTEXT_CALL, $id);
-		$comments = array_reverse($comments, true);
-		$tpl->assign('comments', $comments);
-		
-		$tpl->display('devblocks:cerberusweb.calls::calls/ajax/peek.tpl');
+			// Context
+			if(false == ($context_ext = Extension_DevblocksContext::get($context)))
+				return;
+			
+			// Dictionary
+			$labels = array();
+			$values = array();
+			CerberusContexts::getContext($context, $model, $labels, $values, '', true, false);
+			$dict = DevblocksDictionaryDelegate::instance($values);
+			$tpl->assign('dict', $dict);
+			
+			$properties = $context_ext->getCardProperties();
+			$tpl->assign('properties', $properties);
+			
+			$tpl->display('devblocks:cerberusweb.calls::calls/ajax/peek.tpl');
+		}
 	}
 	
 	function importGetKeys() {

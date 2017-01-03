@@ -10,7 +10,7 @@
 	<tr>
 		<td nowrap="nowrap"><span class="title">{$view->name}</span></td>
 		<td nowrap="nowrap" align="right" class="title-toolbar">
-			<a href="javascript:;" title="{'common.add'|devblocks_translate|capitalize}" class="minimal" onclick="genericAjaxPopup('peek','c=internal&a=showPeekPopup&context={$view_context}&context_id=0&view_id={$view->id}',null,false,'50%');"><span class="glyphicons glyphicons-circle-plus"></span></a>
+			<a href="javascript:;" title="{'common.add'|devblocks_translate|capitalize}" class="minimal peek cerb-peek-trigger" data-context="{$view_context}" data-context-id="0"><span class="glyphicons glyphicons-circle-plus"></span></a>
 			<a href="javascript:;" title="{'common.search'|devblocks_translate|capitalize}" class="minimal" onclick="genericAjaxPopup('search','c=internal&a=viewShowQuickSearchPopup&view_id={$view->id}',null,false,'400');"><span class="glyphicons glyphicons-search"></span></a>
 			<a href="javascript:;" title="{'common.customize'|devblocks_translate|capitalize}" class="minimal" onclick="genericAjaxGet('customize{$view->id}','c=internal&a=viewCustomize&id={$view->id}');toggleDiv('customize{$view->id}','block');"><span class="glyphicons glyphicons-cogwheel"></span></a>
 			<a href="javascript:;" title="Subtotals" class="subtotals minimal"><span class="glyphicons glyphicons-signal"></span></a>
@@ -82,7 +82,7 @@
 					<span class="glyphicons glyphicons-circle-ok" style="font-size:16px;color:rgb(80,80,80);"></span>
 				{/if}
 				<a href="{devblocks_url}c=profiles&type=call&id={$result.c_id}-{$result.c_subject|devblocks_permalink}{/devblocks_url}" class="subject">{$result.c_subject}</a> 
-				<button type="button" class="peek" onclick="genericAjaxPopup('peek','c=internal&a=showPeekPopup&context={CerberusContexts::CONTEXT_CALL}&context_id={$result.c_id}&view_id={$view->id}',null,false,'50%');"><span class="glyphicons glyphicons-new-window-alt"></span></button>
+				<button type="button" class="peek cerb-peek-trigger" data-context="{CerberusContexts::CONTEXT_CALL}" data-context-id="{$result.c_id}"><span class="glyphicons glyphicons-new-window-alt"></span></button>
 			</td>
 		</tr>
 		<tr class="{$tableRowClass}">

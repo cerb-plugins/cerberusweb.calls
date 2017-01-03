@@ -74,7 +74,7 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 		);
 			
 		$properties['updated'] = array(
-			'label' => mb_ucfirst($translate->_('common.updated')),
+			'label' => DevblocksPlatform::translateCapitalized('common.updated'),
 			'type' => Model_CustomField::TYPE_DATE,
 			'value' => $call->updated_date,
 		);
@@ -103,7 +103,7 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 					DAO_ContextLink::getContextLinkCounts(
 						CerberusContexts::CONTEXT_CALL,
 						$call->id,
-						array(CerberusContexts::CONTEXT_WORKER, CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
+						array(CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
 					),
 			),
 		);
@@ -128,6 +128,185 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 		
 		// Template
 		$tpl->display('devblocks:cerberusweb.calls::calls/profile.tpl');
+	}
+	
+	function savePeekJsonAction() {
+		@$view_id = DevblocksPlatform::importGPC($_REQUEST['view_id'], 'string', '');
+		
+		@$id = DevblocksPlatform::importGPC($_REQUEST['id'], 'integer', 0);
+		@$is_outgoing = DevblocksPlatform::importGPC($_REQUEST['is_outgoing'], 'integer', 0);
+		@$is_closed = DevblocksPlatform::importGPC($_REQUEST['is_closed'], 'integer', 0);
+		@$subject = DevblocksPlatform::importGPC($_REQUEST['subject'], 'string', '');
+		@$phone = DevblocksPlatform::importGPC($_REQUEST['phone'], 'string', '');
+		@$comment = DevblocksPlatform::importGPC($_REQUEST['comment'], 'string', '');
+		@$do_delete = DevblocksPlatform::importGPC($_REQUEST['do_delete'], 'string', '');
+		
+		$active_worker = CerberusApplication::getActiveWorker();
+		
+		header('Content-Type: application/json; charset=utf-8');
+		
+		try {
+			if(!empty($id) && !empty($do_delete)) { // Delete
+				DAO_CallEntry::delete($id);
+				
+				echo json_encode(array(
+					'status' => true,
+					'id' => $id,
+					'view_id' => $view_id,
+				));
+				return;
+			}
+			
+			if(empty($phone))
+				throw new Exception_DevblocksAjaxValidationError("The 'Phone:' field is required.", 'phone');
+			
+			if(empty($subject))
+				throw new Exception_DevblocksAjaxValidationError("The 'Subject:' field is required.", 'subject');
+				
+			if(empty($id)) { // New
+				$fields = array(
+					DAO_CallEntry::CREATED_DATE => time(),
+					DAO_CallEntry::UPDATED_DATE => time(),
+					DAO_CallEntry::SUBJECT => $subject,
+					DAO_CallEntry::PHONE => $phone,
+					DAO_CallEntry::IS_OUTGOING => $is_outgoing ? 1 : 0,
+					DAO_CallEntry::IS_CLOSED => $is_closed ? 1 : 0,
+				);
+				
+				if(false == ($id = DAO_CallEntry::create($fields)))
+					throw new Exception_DevblocksAjaxValidationError("Failed to create the record.");
+				
+				if(!empty($view_id) && !empty($id))
+					C4_AbstractView::setMarqueeContextCreated($view_id, CerberusContexts::CONTEXT_CALL, $id);
+				
+			} else { // Edit
+				$fields = array(
+					DAO_CallEntry::UPDATED_DATE => time(),
+					DAO_CallEntry::SUBJECT => $subject,
+					DAO_CallEntry::PHONE => $phone,
+					DAO_CallEntry::IS_OUTGOING => $is_outgoing ? 1 : 0,
+					DAO_CallEntry::IS_CLOSED => $is_closed ? 1 : 0,
+				);
+				DAO_CallEntry::update($id, $fields);
+			}
+			
+			if(!$id)
+				throw new Exception_DevblocksAjaxValidationError("Failed to load the record.");
+
+			// If we're adding a comment
+			if(!empty($comment)) {
+				$also_notify_worker_ids = array_keys(CerberusApplication::getWorkersByAtMentionsText($comment));
+				
+				$fields = array(
+					DAO_Comment::CREATED => time(),
+					DAO_Comment::CONTEXT => CerberusContexts::CONTEXT_CALL,
+					DAO_Comment::CONTEXT_ID => $id,
+					DAO_Comment::COMMENT => $comment,
+					DAO_Comment::OWNER_CONTEXT => CerberusContexts::CONTEXT_WORKER,
+					DAO_Comment::OWNER_CONTEXT_ID => $active_worker->id,
+				);
+				$comment_id = DAO_Comment::create($fields, $also_notify_worker_ids);
+			}
+			
+			// Custom fields
+			@$field_ids = DevblocksPlatform::importGPC($_REQUEST['field_ids'], 'array', array());
+			DAO_CustomFieldValue::handleFormPost(CerberusContexts::CONTEXT_CALL, $id, $field_ids);
+			
+			echo json_encode(array(
+				'status' => true,
+				'id' => $id,
+				'label' => $subject,
+				'view_id' => $view_id,
+			));
+			return;
+			
+		} catch (Exception_DevblocksAjaxValidationError $e) {
+			echo json_encode(array(
+				'status' => false,
+				'error' => $e->getMessage(),
+				'field' => $e->getFieldName(),
+			));
+			return;
+			
+		} catch (Exception $e) {
+			echo json_encode(array(
+				'status' => false,
+				'error' => 'An error occurred.',
+			));
+			return;
+			
+		}
+	}
+	
+	function viewCallsExploreAction() {
+		@$view_id = DevblocksPlatform::importGPC($_REQUEST['view_id'],'string');
+		
+		$active_worker = CerberusApplication::getActiveWorker();
+		$url_writer = DevblocksPlatform::getUrlService();
+		
+		// Generate hash
+		$hash = md5($view_id.$active_worker->id.time());
+		
+		// Loop through view and get IDs
+		$view = C4_AbstractViewLoader::getView($view_id);
+		$view->setAutoPersist(false);
+
+		// Page start
+		@$explore_from = DevblocksPlatform::importGPC($_REQUEST['explore_from'],'integer',0);
+		if(empty($explore_from)) {
+			$orig_pos = 1+($view->renderPage * $view->renderLimit);
+		} else {
+			$orig_pos = 1;
+		}
+		
+		$view->renderPage = 0;
+		$view->renderLimit = 250;
+		$pos = 0;
+		
+		do {
+			$models = array();
+			list($results, $total) = $view->getData();
+
+			// Summary row
+			if(0==$view->renderPage) {
+				$model = new Model_ExplorerSet();
+				$model->hash = $hash;
+				$model->pos = $pos++;
+				$model->params = array(
+					'title' => $view->name,
+					'created' => time(),
+					//'worker_id' => $active_worker->id,
+					'total' => $total,
+					'return_url' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : $url_writer->writeNoProxy('c=search&type=task', true),
+//					'toolbar_extension_id' => 'cerberusweb.explorer.toolbar.',
+				);
+				$models[] = $model;
+				
+				$view->renderTotal = false; // speed up subsequent pages
+			}
+			
+			if(is_array($results))
+			foreach($results as $id => $row) {
+				if($id==$explore_from)
+					$orig_pos = $pos;
+				
+				$model = new Model_ExplorerSet();
+				$model->hash = $hash;
+				$model->pos = $pos++;
+				$model->params = array(
+					'id' => $id,
+					'url' => $url_writer->writeNoProxy(sprintf("c=profiles&type=call&id=%d", $row[SearchFields_CallEntry::ID]), true),
+				);
+				$models[] = $model;
+			}
+			
+			DAO_ExplorerSet::createFromModels($models);
+			
+			$view->renderPage++;
+			
+		} while(!empty($results));
+		
+		DevblocksPlatform::redirect(new DevblocksHttpResponse(array('explore',$hash,$orig_pos)));
 	}
 	
 	function showBulkPopupAction() {

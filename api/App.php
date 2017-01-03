@@ -15,188 +15,6 @@
 |	http://cerb.io	    http://webgroup.media
 ***********************************************************************/
 
-class CallsPage extends CerberusPageExtension {
-	function isVisible() {
-		// The current session must be a logged-in worker to use this page.
-		if(null == ($worker = CerberusApplication::getActiveWorker()))
-			return false;
-		return true;
-	}
-	
-	function render() {
-	}
-	
-	/*
-	 * Request Overload
-	 */
-	function handleRequest(DevblocksHttpRequest $request) {
-		if(!$this->isVisible())
-			return;
-		
-		$path = $request->path;
-		$controller = array_shift($path); // calls
-
-		@$action = DevblocksPlatform::strAlphaNum(array_shift($path), '\_') . 'Action';
-
-		switch($action) {
-			case NULL:
-				// [TODO] Index/page render
-				break;
-				
-			default:
-				// Default action, call arg as a method suffixed with Action
-				if(method_exists($this,$action)) {
-					call_user_func(array(&$this, $action));
-				}
-				break;
-		}
-	}
-	
-	function saveEntryAction() {
-		@$view_id = DevblocksPlatform::importGPC($_REQUEST['view_id'], 'string', '');
-		
-		@$id = DevblocksPlatform::importGPC($_REQUEST['id'], 'integer', 0);
-		@$is_outgoing = DevblocksPlatform::importGPC($_REQUEST['is_outgoing'], 'integer', 0);
-		@$is_closed = DevblocksPlatform::importGPC($_REQUEST['is_closed'], 'integer', 0);
-		@$subject = DevblocksPlatform::importGPC($_REQUEST['subject'], 'string', '');
-		@$phone = DevblocksPlatform::importGPC($_REQUEST['phone'], 'string', '');
-		@$comment = DevblocksPlatform::importGPC($_REQUEST['comment'], 'string', '');
-		@$do_delete = DevblocksPlatform::importGPC($_REQUEST['do_delete'], 'string', '');
-		
-		$active_worker = CerberusApplication::getActiveWorker();
-		
-		if(!empty($id) && !empty($do_delete)) { // Delete
-			DAO_CallEntry::delete($id);
-			
-		} else {
-			if(empty($id)) { // New
-				$fields = array(
-					DAO_CallEntry::CREATED_DATE => time(),
-					DAO_CallEntry::UPDATED_DATE => time(),
-					DAO_CallEntry::SUBJECT => $subject,
-					DAO_CallEntry::PHONE => $phone,
-					DAO_CallEntry::IS_OUTGOING => $is_outgoing,
-					DAO_CallEntry::IS_CLOSED => $is_closed,
-				);
-				
-				if(false == ($id = DAO_CallEntry::create($fields)))
-					return false;
-				
-				// Context Link (if given)
-				@$link_context = DevblocksPlatform::importGPC($_REQUEST['link_context'],'string','');
-				@$link_context_id = DevblocksPlatform::importGPC($_REQUEST['link_context_id'],'integer','');
-				if(!empty($id) && !empty($link_context) && !empty($link_context_id)) {
-					DAO_ContextLink::setLink(CerberusContexts::CONTEXT_CALL, $id, $link_context, $link_context_id);
-				}
-				
-				if(!empty($view_id) && !empty($id))
-					C4_AbstractView::setMarqueeContextCreated($view_id, CerberusContexts::CONTEXT_CALL, $id);
-				
-			} else { // Edit
-				$fields = array(
-					DAO_CallEntry::UPDATED_DATE => time(),
-					DAO_CallEntry::SUBJECT => $subject,
-					DAO_CallEntry::PHONE => $phone,
-					DAO_CallEntry::IS_OUTGOING => $is_outgoing,
-					DAO_CallEntry::IS_CLOSED => $is_closed,
-				);
-				DAO_CallEntry::update($id, $fields);
-				
-			}
-
-			// If we're adding a comment
-			if(!empty($comment)) {
-				$also_notify_worker_ids = array_keys(CerberusApplication::getWorkersByAtMentionsText($comment));
-				
-				$fields = array(
-					DAO_Comment::CREATED => time(),
-					DAO_Comment::CONTEXT => CerberusContexts::CONTEXT_CALL,
-					DAO_Comment::CONTEXT_ID => $id,
-					DAO_Comment::COMMENT => $comment,
-					DAO_Comment::OWNER_CONTEXT => CerberusContexts::CONTEXT_WORKER,
-					DAO_Comment::OWNER_CONTEXT_ID => $active_worker->id,
-				);
-				$comment_id = DAO_Comment::create($fields, $also_notify_worker_ids);
-			}
-			
-			// Custom fields
-			@$field_ids = DevblocksPlatform::importGPC($_REQUEST['field_ids'], 'array', array());
-			DAO_CustomFieldValue::handleFormPost(CerberusContexts::CONTEXT_CALL, $id, $field_ids);
-		}
-	}
-	
-	function viewCallsExploreAction() {
-		@$view_id = DevblocksPlatform::importGPC($_REQUEST['view_id'],'string');
-		
-		$active_worker = CerberusApplication::getActiveWorker();
-		$url_writer = DevblocksPlatform::getUrlService();
-		
-		// Generate hash
-		$hash = md5($view_id.$active_worker->id.time());
-		
-		// Loop through view and get IDs
-		$view = C4_AbstractViewLoader::getView($view_id);
-		$view->setAutoPersist(false);
-
-		// Page start
-		@$explore_from = DevblocksPlatform::importGPC($_REQUEST['explore_from'],'integer',0);
-		if(empty($explore_from)) {
-			$orig_pos = 1+($view->renderPage * $view->renderLimit);
-		} else {
-			$orig_pos = 1;
-		}
-		
-		$view->renderPage = 0;
-		$view->renderLimit = 250;
-		$pos = 0;
-		
-		do {
-			$models = array();
-			list($results, $total) = $view->getData();
-
-			// Summary row
-			if(0==$view->renderPage) {
-				$model = new Model_ExplorerSet();
-				$model->hash = $hash;
-				$model->pos = $pos++;
-				$model->params = array(
-					'title' => $view->name,
-					'created' => time(),
-					//'worker_id' => $active_worker->id,
-					'total' => $total,
-					'return_url' => isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : $url_writer->writeNoProxy('c=search&type=task', true),
-//					'toolbar_extension_id' => 'cerberusweb.explorer.toolbar.',
-				);
-				$models[] = $model;
-				
-				$view->renderTotal = false; // speed up subsequent pages
-			}
-			
-			if(is_array($results))
-			foreach($results as $id => $row) {
-				if($id==$explore_from)
-					$orig_pos = $pos;
-				
-				$model = new Model_ExplorerSet();
-				$model->hash = $hash;
-				$model->pos = $pos++;
-				$model->params = array(
-					'id' => $id,
-					'url' => $url_writer->writeNoProxy(sprintf("c=profiles&type=call&id=%d", $row[SearchFields_CallEntry::ID]), true),
-				);
-				$models[] = $model;
-			}
-			
-			DAO_ExplorerSet::createFromModels($models);
-			
-			$view->renderPage++;
-			
-		} while(!empty($results));
-		
-		DevblocksPlatform::redirect(new DevblocksHttpResponse(array('explore',$hash,$orig_pos)));
-	}
-};
-
 if (class_exists('DevblocksEventListenerExtension')):
 class CallsEventListener extends DevblocksEventListenerExtension {
 	/**
@@ -335,7 +153,7 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 		if(empty($created))
 			$created = time();
 		
-		$trigger = $dict->_trigger;
+		$trigger = $dict->__trigger;
 		
 		$fields = array(
 			DAO_CallEntry::SUBJECT => $subject,
@@ -360,8 +178,8 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 		// Comment content
 		if(!empty($comment)) {
 			$fields = array(
-				DAO_Comment::OWNER_CONTEXT => CerberusContexts::CONTEXT_VIRTUAL_ATTENDANT,
-				DAO_Comment::OWNER_CONTEXT_ID => $trigger->virtual_attendant_id,
+				DAO_Comment::OWNER_CONTEXT => CerberusContexts::CONTEXT_BOT,
+				DAO_Comment::OWNER_CONTEXT_ID => $trigger->bot_id,
 				DAO_Comment::COMMENT => $comment,
 				DAO_Comment::CONTEXT => CerberusContexts::CONTEXT_CALL,
 				DAO_Comment::CONTEXT_ID => $call_id,
