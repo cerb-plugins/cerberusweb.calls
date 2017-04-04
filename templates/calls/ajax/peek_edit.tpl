@@ -14,15 +14,15 @@
 
 	<table cellspacing="0" cellpadding="2" border="0" width="98%">
 		<tr>
-			<td width="1%" nowrap="nowrap" valign="top"><b>{'common.phone'|devblocks_translate|capitalize}:</b></td>
+			<td width="1%" nowrap="nowrap" valign="top"><b>Subject:</b></td>
 			<td width="99%" valign="top">
-				<input type="text" name="phone" value="{$model->phone}" autofocus="autofocus" style="width:98%;">
+				<input type="text" name="subject" value="{$model->subject}" style="width:98%;" autofocus="autofocus">
 			</td>
 		</tr>
 		<tr>
-			<td width="1%" nowrap="nowrap" valign="top"><b>Subject:</b></td>
+			<td width="1%" nowrap="nowrap" valign="top">{'common.phone'|devblocks_translate|capitalize}:</td>
 			<td width="99%" valign="top">
-				<input type="text" name="subject" value="{$model->subject}" style="width:98%;">
+				<input type="text" name="phone" value="{$model->phone}" style="width:98%;">
 			</td>
 		</tr>
 		<tr>

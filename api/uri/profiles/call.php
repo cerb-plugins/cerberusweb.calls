@@ -114,14 +114,6 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 		
 		$tpl->assign('properties', $properties);
 			
-		// Macros
-		
-		$macros = DAO_TriggerEvent::getReadableByActor(
-			$active_worker,
-			'event.macro.call'
-		);
-		$tpl->assign('macros', $macros);
-
 		// Tabs
 		$tab_manifests = Extension_ContextProfileTab::getExtensions(false, CerberusContexts::CONTEXT_CALL);
 		$tpl->assign('tab_manifests', $tab_manifests);
@@ -156,9 +148,6 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 				));
 				return;
 			}
-			
-			if(empty($phone))
-				throw new Exception_DevblocksAjaxValidationError("The 'Phone:' field is required.", 'phone');
 			
 			if(empty($subject))
 				throw new Exception_DevblocksAjaxValidationError("The 'Subject:' field is required.", 'subject');
@@ -329,7 +318,7 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 		
 		// Macros
 		
-		$macros = DAO_TriggerEvent::getReadableByActor(
+		$macros = DAO_TriggerEvent::getUsableMacrosByWorker(
 			$active_worker,
 			'event.macro.call'
 		);

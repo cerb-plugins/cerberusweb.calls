@@ -1,5 +1,6 @@
 {$page_context = CerberusContexts::CONTEXT_CALL}
 {$page_context_id = $call->id}
+{$is_writeable = Context_CallEntry::isWriteableByActor($call, $active_worker)}
 
 <div style="float:left">
 	<h1>{$call->subject}</h1>
@@ -21,14 +22,18 @@
 		<span>
 		{$object_watchers = DAO_ContextLink::getContextLinks($page_context, array($page_context_id), CerberusContexts::CONTEXT_WORKER)}
 		{include file="devblocks:cerberusweb.core::internal/watchers/context_follow_button.tpl" context=$page_context context_id=$page_context_id full=true}
-		</span>		
+		</span>
 		
 		<!-- Macros -->
+		{if $is_writeable}
 		{devblocks_url assign=return_url full=true}c=profiles&type=call&id={$page_context_id}-{$call->subject|devblocks_permalink}{/devblocks_url}
-		{include file="devblocks:cerberusweb.core::internal/macros/display/button.tpl" context=$page_context context_id=$page_context_id macros=$macros return_url=$return_url}		
+		{include file="devblocks:cerberusweb.core::internal/macros/display/button.tpl" context=$page_context context_id=$page_context_id macro_event="event.macro.call" return_url=$return_url}
+		{/if}
 		
 		<!-- Edit -->
+		{if $is_writeable}
 		<button type="button" id="btnDisplayCallEdit" title="{'common.edit'|devblocks_translate|capitalize} (E)" class="cerb-peek-trigger" data-context="{$page_context}" data-context-id="{$page_context_id}" data-edit="true"><span class="glyphicons glyphicons-cogwheel"></span></button>
+		{/if}
 	</form>
 	
 	{if $pref_keyboard_shortcuts}
@@ -113,8 +118,6 @@ $(function() {
 		.on('cerb-peek-closed', function(e) {
 		})
 		;
-	
-	{include file="devblocks:cerberusweb.core::internal/macros/display/menu_script.tpl" selector_button=null selector_menu=null}
 });
 </script>
 
