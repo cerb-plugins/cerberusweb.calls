@@ -1133,6 +1133,7 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 		$tpl = DevblocksPlatform::getTemplateService();
 		$tpl->assign('view_id', $view_id);
 		
+		$active_worker = CerberusApplication::getActiveWorker();
 		$context = CerberusContexts::CONTEXT_CALL;
 		
 		if(!empty($context_id)) {
@@ -1160,6 +1161,13 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 			$tpl->display('devblocks:cerberusweb.calls::calls/ajax/peek_edit.tpl');
 			
 		} else {
+			// Dictionary
+			$labels = array();
+			$values = array();
+			CerberusContexts::getContext($context, $model, $labels, $values, '', true, false);
+			$dict = DevblocksDictionaryDelegate::instance($values);
+			$tpl->assign('dict', $dict);
+			
 			// Counts
 			$activity_counts = array(
 				'comments' => DAO_Comment::count($context, $context_id),
@@ -1189,15 +1197,13 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 			if(false == ($context_ext = Extension_DevblocksContext::get($context)))
 				return;
 			
-			// Dictionary
-			$labels = array();
-			$values = array();
-			CerberusContexts::getContext($context, $model, $labels, $values, '', true, false);
-			$dict = DevblocksDictionaryDelegate::instance($values);
-			$tpl->assign('dict', $dict);
-			
 			$properties = $context_ext->getCardProperties();
 			$tpl->assign('properties', $properties);
+			
+			// Interactions
+			$interactions = Event_GetInteractionsForWorker::getInteractionsByPointAndWorker('record:' . $context, $dict, $active_worker);
+			$interactions_menu = Event_GetInteractionsForWorker::getInteractionMenu($interactions);
+			$tpl->assign('interactions_menu', $interactions_menu);
 			
 			$tpl->display('devblocks:cerberusweb.calls::calls/ajax/peek.tpl');
 		}
