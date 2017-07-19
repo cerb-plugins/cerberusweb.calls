@@ -116,7 +116,7 @@ abstract class AbstractEvent_Call extends Extension_DevblocksEvent {
 				'context' => CerberusContexts::CONTEXT_BEHAVIOR,
 			),
 			'behavior_bot_id' => array(
-				'label' => 'Behavior',
+				'label' => 'Bot',
 				'context' => CerberusContexts::CONTEXT_BOT,
 			),
 			'call_id' => array(
