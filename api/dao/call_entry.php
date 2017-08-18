@@ -16,16 +16,63 @@
 ***********************************************************************/
 
 class DAO_CallEntry extends Cerb_ORMHelper {
-	const ID = 'id';
-	const SUBJECT = 'subject';
-	const PHONE = 'phone';
 	const CREATED_DATE = 'created_date';
-	const UPDATED_DATE = 'updated_date';
-	const IS_OUTGOING = 'is_outgoing';
+	const ID = 'id';
 	const IS_CLOSED = 'is_closed';
+	const IS_OUTGOING = 'is_outgoing';
+	const PHONE = 'phone';
+	const SUBJECT = 'subject';
+	const UPDATED_DATE = 'updated_date';
+	
+	private function __construct() {}
+
+	static function getFields() {
+		$validation = DevblocksPlatform::services()->validation();
+		
+		// int(10) unsigned
+		$validation
+			->addField(self::CREATED_DATE)
+			->timestamp()
+			;
+		// int(10) unsigned
+		$validation
+			->addField(self::ID)
+			->id()
+			->setEditable(false)
+			;
+		// tinyint(1) unsigned
+		$validation
+			->addField(self::IS_CLOSED)
+			->bit()
+			;
+		// tinyint(1) unsigned
+		$validation
+			->addField(self::IS_OUTGOING)
+			->bit()
+			;
+		// varchar(128)
+		$validation
+			->addField(self::PHONE)
+			->string()
+			->setMaxLength(128)
+			;
+		// varchar(255)
+		$validation
+			->addField(self::SUBJECT)
+			->string()
+			->setMaxLength(255)
+			;
+		// int(10) unsigned
+		$validation
+			->addField(self::UPDATED_DATE)
+			->timestamp()
+			;
+
+		return $validation->getFields();
+	}
 
 	static function create($fields) {
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 		
 		$sql = sprintf("INSERT INTO call_entry () ".
 			"VALUES ()"
@@ -79,7 +126,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			if($check_deltas) {
 				
 				// Trigger an event about the changes
-				$eventMgr = DevblocksPlatform::getEventService();
+				$eventMgr = DevblocksPlatform::services()->event();
 				$eventMgr->trigger(
 					new Model_DevblocksEvent(
 						'dao.call_entry.update',
@@ -154,7 +201,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 	 * @return Model_CallEntry[]
 	 */
 	static function getWhere($where=null) {
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 		
 		$sql = "SELECT id, subject, phone, created_date, updated_date, is_outgoing, is_closed ".
 			"FROM call_entry ".
@@ -212,7 +259,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 
 	static function maint() {
 		// Fire event
-		$eventMgr = DevblocksPlatform::getEventService();
+		$eventMgr = DevblocksPlatform::services()->event();
 		$eventMgr->trigger(
 			new Model_DevblocksEvent(
 				'context.maint',
@@ -227,14 +274,14 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 	
 	static function delete($ids) {
 		if(!is_array($ids)) $ids = array($ids);
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 		
 		$ids_list = implode(',', $ids);
 		
 		$db->ExecuteMaster(sprintf("DELETE FROM call_entry WHERE id IN (%s)", $ids_list));
 		
 		// Fire event
-		$eventMgr = DevblocksPlatform::getEventService();
+		$eventMgr = DevblocksPlatform::services()->event();
 		$eventMgr->trigger(
 			new Model_DevblocksEvent(
 				'context.delete',
@@ -336,7 +383,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 	 * @return array
 	 */
 	static function search($columns, $params, $limit=10, $page=0, $sortBy=null, $sortAsc=null, $withCounts=true) {
-		$db = DevblocksPlatform::getDatabaseService();
+		$db = DevblocksPlatform::services()->database();
 
 		// Build search queries
 		$query_parts = self::getSearchQueryComponents($columns,$params,$sortBy,$sortAsc);
@@ -730,7 +777,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 	function render() {
 		$this->_sanitize();
 		
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('id', $this->id);
 		$tpl->assign('view', $this);
 
@@ -765,7 +812,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 	}
 
 	function renderCriteria($field) {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('id', $this->id);
 		$tpl->assign('view', $this);
 
@@ -901,14 +948,14 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 		if(empty($context_id))
 			return '';
 	
-		$url_writer = DevblocksPlatform::getUrlService();
+		$url_writer = DevblocksPlatform::services()->url();
 		$url = $url_writer->writeNoProxy('c=profiles&type=call&id='.$context_id, true);
 		return $url;
 	}
 	
 	function getMeta($context_id) {
 		$call = DAO_CallEntry::get($context_id);
-		$url_writer = DevblocksPlatform::getUrlService();
+		$url_writer = DevblocksPlatform::services()->url();
 		
 		$url = $this->profileGetUrl($context_id);
 		$friendly = DevblocksPlatform::strToPermalink($call->subject);
@@ -1030,11 +1077,23 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 			$token_values = $this->_importModelCustomFieldsAsValues($call, $token_values);
 			
 			// URL
-			$url_writer = DevblocksPlatform::getUrlService();
+			$url_writer = DevblocksPlatform::services()->url();
 			$token_values['record_url'] = $url_writer->writeNoProxy(sprintf("c=profiles&type=call&id=%d-%s",$call->id, DevblocksPlatform::strToPermalink($call->subject)), true);
 		}
 		
 		return true;
+	}
+	
+	function getKeyToDaoFieldMap() {
+		return [
+			'id' => DAO_CallEntry::ID,
+			'created' => DAO_CallEntry::CREATED_DATE,
+			'is_closed' => DAO_CallEntry::IS_CLOSED,
+			'is_outgoing' => DAO_CallEntry::IS_OUTGOING,
+			'phone' => DAO_CallEntry::PHONE,
+			'subject' => DAO_CallEntry::SUBJECT,
+			'updated' => DAO_CallEntry::UPDATED_DATE,
+		];
 	}
 
 	function lazyLoadContextValues($token, $dictionary) {
@@ -1130,7 +1189,7 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 	}
 	
 	function renderPeekPopup($context_id=0, $view_id='', $edit=false) {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('view_id', $view_id);
 		
 		$active_worker = CerberusApplication::getActiveWorker();

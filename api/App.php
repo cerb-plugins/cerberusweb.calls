@@ -33,7 +33,7 @@ endif;
 if(class_exists('Extension_DevblocksEventAction')):
 class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 	function render(Extension_DevblocksEvent $event, Model_TriggerEvent $trigger, $params=array(), $seq=null) {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('params', $params);
 		$tpl->assign('workers', DAO_Worker::getAll());
 		
@@ -58,7 +58,7 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 		@$notify_worker_ids = DevblocksPlatform::importVar($params['notify_worker_id'],'array',array());
 		$notify_worker_ids = DevblocksEventHelper::mergeWorkerVars($notify_worker_ids, $dict);
 				
-		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
+		$tpl_builder = DevblocksPlatform::services()->templateBuilder();
 		
 		$subject = $tpl_builder->build($params['subject'], $dict);
 		$phone = $tpl_builder->build($params['phone'], $dict);
@@ -142,7 +142,7 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 		@$notify_worker_ids = DevblocksPlatform::importVar($params['notify_worker_id'],'array',array());
 		$notify_worker_ids = DevblocksEventHelper::mergeWorkerVars($notify_worker_ids, $dict);
 				
-		$tpl_builder = DevblocksPlatform::getTemplateBuilder();
+		$tpl_builder = DevblocksPlatform::services()->templateBuilder();
 		$subject = $tpl_builder->build($params['subject'], $dict);
 		$phone = $tpl_builder->build($params['phone'], $dict);
 		$is_outgoing = intval($params['is_outgoing']);
