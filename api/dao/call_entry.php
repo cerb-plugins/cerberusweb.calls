@@ -61,6 +61,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			->addField(self::SUBJECT)
 			->string()
 			->setMaxLength(255)
+			->setRequired(true)
 			;
 		// int(10) unsigned
 		$validation

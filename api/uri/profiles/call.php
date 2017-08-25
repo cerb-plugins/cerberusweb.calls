@@ -153,6 +153,9 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 		
 		try {
 			if(!empty($id) && !empty($do_delete)) { // Delete
+				if(!$active_worker->hasPriv(sprintf("contexts.%s.delete", CerberusContexts::CONTEXT_CALL)))
+					throw new Exception_DevblocksAjaxValidationError(DevblocksPlatform::translate('error.core.no_acl.delete'));
+				
 				DAO_CallEntry::delete($id);
 				
 				echo json_encode(array(
@@ -163,10 +166,10 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 				return;
 			}
 			
-			if(empty($subject))
-				throw new Exception_DevblocksAjaxValidationError("The 'Subject:' field is required.", 'subject');
-				
 			if(empty($id)) { // New
+				if(!$active_worker->hasPriv(sprintf("contexts.%s.create", CerberusContexts::CONTEXT_CALL)))
+					throw new Exception_DevblocksAjaxValidationError(DevblocksPlatform::translate('error.core.no_acl.create'));
+				
 				$fields = array(
 					DAO_CallEntry::CREATED_DATE => time(),
 					DAO_CallEntry::UPDATED_DATE => time(),
@@ -176,6 +179,9 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 					DAO_CallEntry::IS_CLOSED => $is_closed ? 1 : 0,
 				);
 				
+				if(!DAO_CallEntry::validate($fields, $error))
+					throw new Exception_DevblocksAjaxValidationError($error);
+				
 				if(false == ($id = DAO_CallEntry::create($fields)))
 					throw new Exception_DevblocksAjaxValidationError("Failed to create the record.");
 				
@@ -183,6 +189,9 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 					C4_AbstractView::setMarqueeContextCreated($view_id, CerberusContexts::CONTEXT_CALL, $id);
 				
 			} else { // Edit
+				if(!$active_worker->hasPriv(sprintf("contexts.%s.update", CerberusContexts::CONTEXT_CALL)))
+					throw new Exception_DevblocksAjaxValidationError(DevblocksPlatform::translate('error.core.no_acl.edit'));
+				
 				$fields = array(
 					DAO_CallEntry::UPDATED_DATE => time(),
 					DAO_CallEntry::SUBJECT => $subject,
@@ -190,6 +199,10 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 					DAO_CallEntry::IS_OUTGOING => $is_outgoing ? 1 : 0,
 					DAO_CallEntry::IS_CLOSED => $is_closed ? 1 : 0,
 				);
+				
+				if(!DAO_CallEntry::validate($fields, $error, $id))
+					throw new Exception_DevblocksAjaxValidationError($error);
+				
 				DAO_CallEntry::update($id, $fields);
 			}
 			

@@ -15,7 +15,6 @@
 |	http://cerb.ai	    http://webgroup.media
 ***********************************************************************/
 
-if (class_exists('DevblocksEventListenerExtension')):
 class CallsEventListener extends DevblocksEventListenerExtension {
 	/**
 	 * @param Model_DevblocksEvent $event
@@ -28,9 +27,7 @@ class CallsEventListener extends DevblocksEventListenerExtension {
 		}
 	}
 };
-endif;
 
-if(class_exists('Extension_DevblocksEventAction')):
 class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 	function render(Extension_DevblocksEvent $event, Model_TriggerEvent $trigger, $params=array(), $seq=null) {
 		$tpl = DevblocksPlatform::services()->template();
@@ -197,4 +194,3 @@ class WgmCalls_EventActionPost extends Extension_DevblocksEventAction {
 		return $call_id;
 	}
 };
-endif;
