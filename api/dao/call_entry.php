@@ -68,7 +68,12 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			->addField(self::UPDATED_DATE)
 			->timestamp()
 			;
-
+		$validation
+			->addField('_links')
+			->string()
+			->setMaxLength(65535)
+			;
+			
 		return $validation->getFields();
 	}
 
@@ -107,6 +112,9 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 	static function update($ids, $fields, $check_deltas=true) {
 		if(!is_array($ids))
 			$ids = array($ids);
+		
+		$context = CerberusContexts::CONTEXT_CALL;
+		self::_updateAbstract($context, $ids, $fields);
 		
 		// Make a diff for the requested objects in batches
 		
@@ -320,7 +328,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 				SearchFields_CallEntry::UPDATED_DATE,
 				SearchFields_CallEntry::IS_OUTGOING,
 				SearchFields_CallEntry::IS_CLOSED
-			 );
+			);
 		
 		$join_sql =
 			"FROM call_entry c ";
@@ -619,7 +627,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 					
 				// Valid custom fields
 				default:
-					if('cf_' == substr($field_key,0,3))
+					if(DevblocksPlatform::strStartsWith($field_key, 'cf_'))
 						$pass = $this->_canSubtotalCustomField($field_key);
 					break;
 			}
@@ -930,6 +938,10 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 };
 
 class Context_CallEntry extends Extension_DevblocksContext implements IDevblocksContextProfile, IDevblocksContextPeek, IDevblocksContextImport {
+	static function isCreateableByActor(array $fields, $actor) {
+		return true;
+	}
+	
 	static function isReadableByActor($models, $actor) {
 		// Everyone can view
 		return CerberusContexts::allowEverything($models);
@@ -1090,10 +1102,21 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 			'created' => DAO_CallEntry::CREATED_DATE,
 			'is_closed' => DAO_CallEntry::IS_CLOSED,
 			'is_outgoing' => DAO_CallEntry::IS_OUTGOING,
+			'links' => '_links',
 			'phone' => DAO_CallEntry::PHONE,
 			'subject' => DAO_CallEntry::SUBJECT,
 			'updated' => DAO_CallEntry::UPDATED_DATE,
 		];
+	}
+	
+	function getDaoFieldsFromKeyAndValue($key, $value, &$out_fields, &$error) {
+		switch(DevblocksPlatform::strLower($key)) {
+			case 'links':
+				$this->_getDaoFieldsLinks($value, $out_fields, $error);
+				break;
+		}
+		
+		return true;
 	}
 
 	function lazyLoadContextValues($token, $dictionary) {
