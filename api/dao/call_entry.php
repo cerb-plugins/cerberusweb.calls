@@ -151,6 +151,15 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 		}
 	}
 	
+	static public function onBeforeUpdateByActor($actor, $fields, $id=null, &$error=null) {
+		$context = CerberusContexts::CONTEXT_CALL;
+		
+		if(!self::_onBeforeUpdateByActorCheckContextPrivs($actor, $context, $id, $error))
+			return false;
+		
+		return true;
+	}
+	
 	/**
 	 * @param Model_ContextBulkUpdate $update
 	 * @return boolean
@@ -938,10 +947,6 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 };
 
 class Context_CallEntry extends Extension_DevblocksContext implements IDevblocksContextProfile, IDevblocksContextPeek, IDevblocksContextImport {
-	static function isCreateableByActor(array $fields, $actor) {
-		return true;
-	}
-	
 	static function isReadableByActor($models, $actor) {
 		// Everyone can view
 		return CerberusContexts::allowEverything($models);

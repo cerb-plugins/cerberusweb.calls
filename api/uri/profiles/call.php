@@ -167,9 +167,6 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 			}
 			
 			if(empty($id)) { // New
-				if(!$active_worker->hasPriv(sprintf("contexts.%s.create", CerberusContexts::CONTEXT_CALL)))
-					throw new Exception_DevblocksAjaxValidationError(DevblocksPlatform::translate('error.core.no_acl.create'));
-				
 				$fields = array(
 					DAO_CallEntry::CREATED_DATE => time(),
 					DAO_CallEntry::UPDATED_DATE => time(),
@@ -182,16 +179,18 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 				if(!DAO_CallEntry::validate($fields, $error))
 					throw new Exception_DevblocksAjaxValidationError($error);
 				
+				if(!DAO_CallEntry::onBeforeUpdateByActor($active_worker, $fields, null, $error))
+					throw new Exception_DevblocksAjaxValidationError($error);
+				
 				if(false == ($id = DAO_CallEntry::create($fields)))
 					throw new Exception_DevblocksAjaxValidationError("Failed to create the record.");
+				
+				DAO_CallEntry::onUpdateByActor($active_worker, $fields, $id);
 				
 				if(!empty($view_id) && !empty($id))
 					C4_AbstractView::setMarqueeContextCreated($view_id, CerberusContexts::CONTEXT_CALL, $id);
 				
 			} else { // Edit
-				if(!$active_worker->hasPriv(sprintf("contexts.%s.update", CerberusContexts::CONTEXT_CALL)))
-					throw new Exception_DevblocksAjaxValidationError(DevblocksPlatform::translate('error.core.no_acl.edit'));
-				
 				$fields = array(
 					DAO_CallEntry::UPDATED_DATE => time(),
 					DAO_CallEntry::SUBJECT => $subject,
@@ -203,7 +202,11 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 				if(!DAO_CallEntry::validate($fields, $error, $id))
 					throw new Exception_DevblocksAjaxValidationError($error);
 				
+				if(!DAO_CallEntry::onBeforeUpdateByActor($active_worker, $fields, $id, $error))
+					throw new Exception_DevblocksAjaxValidationError($error);
+				
 				DAO_CallEntry::update($id, $fields);
+				DAO_CallEntry::onUpdateByActor($active_worker, $fields, $id);
 			}
 			
 			if(!$id)
