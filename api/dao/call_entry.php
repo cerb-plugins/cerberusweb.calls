@@ -174,8 +174,8 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 		
 		$update->markInProgress();
 		
-		$change_fields = array();
-		$custom_fields = array();
+		$change_fields = [];
+		$custom_fields = [];
 
 		if(is_array($do))
 		foreach($do as $k => $v) {
@@ -189,7 +189,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 					break;
 				default:
 					// Custom fields
-					if(substr($k,0,3)=="cf_") {
+					if(DevblocksPlatform::strStartsWith($k, 'cf_')) {
 						$custom_fields[substr($k,3)] = $v;
 					}
 			}
@@ -288,6 +288,22 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 				)
 			)
 		);
+	}
+	
+	static function mergeIds($from_ids, $to_id) {
+		$db = DevblocksPlatform::services()->database();
+
+		$context = CerberusContexts::CONTEXT_CALL;
+		
+		if(empty($from_ids) || empty($to_id))
+			return false;
+			
+		if(!is_numeric($to_id) || !is_array($from_ids))
+			return false;
+		
+		self::_mergeIds($context, $from_ids, $to_id);
+		
+		return true;
 	}
 	
 	static function delete($ids) {
@@ -946,7 +962,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 	}
 };
 
-class Context_CallEntry extends Extension_DevblocksContext implements IDevblocksContextProfile, IDevblocksContextPeek, IDevblocksContextImport {
+class Context_CallEntry extends Extension_DevblocksContext implements IDevblocksContextProfile, IDevblocksContextPeek, IDevblocksContextImport, IDevblocksContextMerge {
 	static function isReadableByActor($models, $actor) {
 		// Everyone can view
 		return CerberusContexts::allowEverything($models);
@@ -1187,7 +1203,6 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 		$view->renderSortBy = SearchFields_CallEntry::UPDATED_DATE;
 		$view->renderSortAsc = false;
 		$view->renderLimit = 10;
-		$view->renderFilters = false;
 		$view->renderTemplate = 'contextlinks_chooser';
 		
 		return $view;
@@ -1294,6 +1309,17 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 			
 			$tpl->display('devblocks:cerberusweb.calls::calls/ajax/peek.tpl');
 		}
+	}
+	
+	function mergeGetKeys() {
+		$keys = [
+			'is_closed',
+			'is_outgoing',
+			'phone',
+			'subject',
+		];
+		
+		return $keys;
 	}
 	
 	function importGetKeys() {
