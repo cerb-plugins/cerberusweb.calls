@@ -2,7 +2,7 @@
 /***********************************************************************
 | Cerb(tm) developed by Webgroup Media, LLC.
 |-----------------------------------------------------------------------
-| All source code & content (c) Copyright 2002-2017, Webgroup Media LLC
+| All source code & content (c) Copyright 2002-2018, Webgroup Media LLC
 |   unless specifically noted otherwise.
 |
 | This source code is released under the Devblocks Public License.
@@ -371,12 +371,6 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 			'tables' => &$tables,
 		);
 		
-		array_walk_recursive(
-			$params,
-			array('DAO_CallEntry', '_translateVirtualParameters'),
-			$args
-		);
-		
 		$result = array(
 			'primary_table' => 'c',
 			'select' => $select_sql,
@@ -386,23 +380,6 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 		);
 		
 		return $result;
-	}
-	
-	private static function _translateVirtualParameters($param, $key, &$args) {
-		if(!is_a($param, 'DevblocksSearchCriteria'))
-			return;
-		
-		$param_key = $param->field;
-		settype($param_key, 'string');
-		
-		$from_context = 'cerberusweb.contexts.call';
-		$from_index = 'c.id';
-		
-		switch($param_key) {
-			case SearchFields_CallEntry::VIRTUAL_HAS_FIELDSET:
-				self::_searchComponentsVirtualHasFieldset($param, $from_context, $from_index, $args['join_sql'], $args['where_sql']);
-				break;
-		}
 	}
 	
 	/**
@@ -511,6 +488,10 @@ class SearchFields_CallEntry extends DevblocksSearchFields {
 				return self::_getWhereSQLFromContextLinksField($param, CerberusContexts::CONTEXT_CALL, self::getPrimaryKey());
 				break;
 				
+			case self::VIRTUAL_HAS_FIELDSET:
+				return self::_getWhereSQLFromVirtualSearchSqlField($param, CerberusContexts::CONTEXT_CUSTOM_FIELDSET, sprintf('SELECT context_id FROM context_to_custom_fieldset WHERE context = %s AND custom_fieldset_id IN (%%s)', Cerb_ORMHelper::qstr(CerberusContexts::CONTEXT_CALL)), self::getPrimaryKey());
+				break;
+				
 			case self::VIRTUAL_WATCHERS:
 				return self::_getWhereSQLFromWatchersField($param, CerberusContexts::CONTEXT_CALL, self::getPrimaryKey());
 				break;
@@ -600,10 +581,6 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 			SearchFields_CallEntry::VIRTUAL_WATCHERS,
 		));
 		
-		$this->addParamsHidden(array(
-			SearchFields_CallEntry::ID,
-		));
-
 		$this->doResetCriteria();
 	}
 
@@ -721,6 +698,14 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 					'type' => DevblocksSearchCriteria::TYPE_DATE,
 					'options' => array('param_key' => SearchFields_CallEntry::CREATED_DATE),
 				),
+			'fieldset' =>
+				array(
+					'type' => DevblocksSearchCriteria::TYPE_VIRTUAL,
+					'options' => array('param_key' => SearchFields_CallEntry::VIRTUAL_HAS_FIELDSET),
+					'examples' => [
+						['type' => 'search', 'context' => CerberusContexts::CONTEXT_CUSTOM_FIELDSET, 'qr' => 'context:' . CerberusContexts::CONTEXT_CALL],
+					]
+				),
 			'id' => 
 				array(
 					'type' => DevblocksSearchCriteria::TYPE_NUMBER,
@@ -763,7 +748,7 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 		
 		// Add quick search links
 		
-		$fields = self::_appendVirtualFiltersFromQuickSearchContexts('links', $fields, 'links');
+		$fields = self::_appendVirtualFiltersFromQuickSearchContexts('links', $fields, 'links', SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK);
 		
 		// Add searchable custom fields
 		
@@ -795,6 +780,10 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 	
 	function getParamFromQuickSearchFieldTokens($field, $tokens) {
 		switch($field) {
+			case 'fieldset':
+				return DevblocksSearchCriteria::getVirtualQuickSearchParamFromTokens($field, $tokens, '*_has_fieldset');
+				break;
+			
 			default:
 				if($field == 'links' || substr($field, 0, 6) == 'links.')
 					return DevblocksSearchCriteria::getContextLinksParamFromTokens($field, $tokens);
@@ -840,49 +829,6 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 
 			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
 				$this->_renderVirtualWatchers($param);
-				break;
-		}
-	}
-
-	function renderCriteria($field) {
-		$tpl = DevblocksPlatform::services()->template();
-		$tpl->assign('id', $this->id);
-		$tpl->assign('view', $this);
-
-		switch($field) {
-			case SearchFields_CallEntry::SUBJECT:
-			case SearchFields_CallEntry::PHONE:
-				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__string.tpl');
-				break;
-			case SearchFields_CallEntry::CREATED_DATE:
-			case SearchFields_CallEntry::UPDATED_DATE:
-				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__date.tpl');
-				break;
-			case SearchFields_CallEntry::IS_CLOSED:
-			case SearchFields_CallEntry::IS_OUTGOING:
-				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__bool.tpl');
-				break;
-			case SearchFields_CallEntry::FULLTEXT_COMMENT_CONTENT:
-				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__fulltext.tpl');
-				break;
-			case SearchFields_CallEntry::VIRTUAL_CONTEXT_LINK:
-				$contexts = Extension_DevblocksContext::getAll(false);
-				$tpl->assign('contexts', $contexts);
-				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__context_link.tpl');
-				break;
-			case SearchFields_CallEntry::VIRTUAL_HAS_FIELDSET:
-				$this->_renderCriteriaHasFieldset($tpl, CerberusContexts::CONTEXT_CALL);
-				break;
-			case SearchFields_CallEntry::VIRTUAL_WATCHERS:
-				$tpl->display('devblocks:cerberusweb.core::internal/views/criteria/__context_worker.tpl');
-				break;
-			default:
-				// Custom Fields
-				if('cf_' == substr($field,0,3)) {
-					$this->_renderCriteriaCustomField($tpl, substr($field,3));
-				} else {
-					echo ' ';
-				}
 				break;
 		}
 	}
@@ -963,6 +909,8 @@ class View_CallEntry extends C4_AbstractView implements IAbstractView_Subtotals,
 };
 
 class Context_CallEntry extends Extension_DevblocksContext implements IDevblocksContextProfile, IDevblocksContextPeek, IDevblocksContextImport, IDevblocksContextMerge {
+	const ID = 'cerberusweb.contexts.call';
+	
 	static function isReadableByActor($models, $actor) {
 		// Everyone can view
 		return CerberusContexts::allowEverything($models);
@@ -984,6 +932,55 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 		$url_writer = DevblocksPlatform::services()->url();
 		$url = $url_writer->writeNoProxy('c=profiles&type=call&id='.$context_id, true);
 		return $url;
+	}
+	
+	function profileGetFields($model=null) {
+		$translate = DevblocksPlatform::getTranslationService();
+		$properties = [];
+		
+		if(is_null($model))
+			$model = new Model_CallEntry();
+		
+		$properties['name'] = array(
+			'label' => mb_ucfirst($translate->_('common.name')),
+			'type' => Model_CustomField::TYPE_LINK,
+			'value' => $model->id,
+			'params' => [
+				'context' => self::ID,
+			],
+		);
+		
+		$properties['is_closed'] = array(
+			'label' => mb_ucfirst($translate->_('common.is_closed')),
+			'type' => Model_CustomField::TYPE_CHECKBOX,
+			'value' => $model->is_closed,
+		);
+			
+		$properties['is_outgoing'] = array(
+			'label' => mb_ucfirst($translate->_('call_entry.model.is_outgoing')),
+			'type' => Model_CustomField::TYPE_CHECKBOX,
+			'value' => $model->is_outgoing,
+		);
+			
+		$properties['phone'] = array(
+			'label' => mb_ucfirst($translate->_('call_entry.model.phone')),
+			'type' => Model_CustomField::TYPE_SINGLE_LINE,
+			'value' => $model->phone,
+		);
+			
+		$properties['created'] = array(
+			'label' => mb_ucfirst($translate->_('common.created')),
+			'type' => Model_CustomField::TYPE_DATE,
+			'value' => $model->created_date,
+		);
+			
+		$properties['updated'] = array(
+			'label' => DevblocksPlatform::translateCapitalized('common.updated'),
+			'type' => Model_CustomField::TYPE_DATE,
+			'value' => $model->updated_date,
+		);
+		
+		return $properties;
 	}
 	
 	function getMeta($context_id) {
@@ -1270,12 +1267,6 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 			$dict = DevblocksDictionaryDelegate::instance($values);
 			$tpl->assign('dict', $dict);
 			
-			// Counts
-			$activity_counts = array(
-				'comments' => DAO_Comment::count($context, $context_id),
-			);
-			$tpl->assign('activity_counts', $activity_counts);
-			
 			// Links
 			$links = array(
 				$context => array(
@@ -1283,7 +1274,7 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 						DAO_ContextLink::getContextLinkCounts(
 							$context,
 							$context_id,
-							array(CerberusContexts::CONTEXT_CUSTOM_FIELDSET)
+							[]
 						),
 				),
 			);
@@ -1306,6 +1297,10 @@ class Context_CallEntry extends Extension_DevblocksContext implements IDevblocks
 			$interactions = Event_GetInteractionsForWorker::getInteractionsByPointAndWorker('record:' . $context, $dict, $active_worker);
 			$interactions_menu = Event_GetInteractionsForWorker::getInteractionMenu($interactions);
 			$tpl->assign('interactions_menu', $interactions_menu);
+			
+			// Card search buttons
+			$search_buttons = $context_ext->getCardSearchButtons($dict, []);
+			$tpl->assign('search_buttons', $search_buttons);
 			
 			$tpl->display('devblocks:cerberusweb.calls::calls/ajax/peek.tpl');
 		}
