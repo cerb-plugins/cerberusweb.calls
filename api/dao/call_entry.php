@@ -506,6 +506,29 @@ class SearchFields_CallEntry extends DevblocksSearchFields {
 		}
 	}
 	
+	static function getFieldForSubtotalKey($key, array $query_fields, array $search_fields, $primary_key) {
+		switch($key) {
+		}
+		
+		return parent::getFieldForSubtotalKey($key, $query_fields, $search_fields, $primary_key);
+	}
+	
+	static function getLabelsForKeyValues($key, $values) {
+		switch($key) {
+			case SearchFields_CallEntry::ID:
+				$models = DAO_CallEntry::getIds($values);
+				return array_column(DevblocksPlatform::objectsToArrays($models), 'subject', 'id');
+				break;
+				
+			case SearchFields_CallEntry::IS_CLOSED:
+			case SearchFields_CallEntry::IS_OUTGOING:
+				return parent::_getLabelsForKeyBooleanValues();
+				break;
+		}
+		
+		return parent::getLabelsForKeyValues($key, $values);
+	}
+	
 	/**
 	 * @return DevblocksSearchField[]
 	 */

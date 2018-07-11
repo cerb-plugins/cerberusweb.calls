@@ -10,45 +10,38 @@
 <input type="hidden" name="do_delete" value="0">
 <input type="hidden" name="_csrf_token" value="{$session.csrf_token}">
 
-<fieldset class="peek">
-	<legend>{'common.properties'|devblocks_translate}</legend>
-
-	<table cellspacing="0" cellpadding="2" border="0" width="98%">
-		<tr>
-			<td width="1%" nowrap="nowrap" valign="top"><b>Subject:</b></td>
-			<td width="99%" valign="top">
-				<input type="text" name="subject" value="{$model->subject}" style="width:98%;" autofocus="autofocus">
-			</td>
-		</tr>
-		<tr>
-			<td width="1%" nowrap="nowrap" valign="top">{'common.phone'|devblocks_translate|capitalize}:</td>
-			<td width="99%" valign="top">
-				<input type="text" name="phone" value="{$model->phone}" style="width:98%;">
-			</td>
-		</tr>
-		<tr>
-			<td width="1%" nowrap="nowrap" valign="top"><b>{'common.type'|devblocks_translate|capitalize}:</b></td>
-			<td width="99%" valign="top">
-				<label><input type="radio" name="is_outgoing" value="0" {if empty($model) || !$model->is_outgoing}checked="checked"{/if}> Incoming</label>
-				<label><input type="radio" name="is_outgoing" value="1" {if !empty($model) && $model->is_outgoing}checked="checked"{/if}> Outgoing</label>
-			</td>
-		</tr>
-		<tr>
-			<td width="1%" nowrap="nowrap" valign="top"><b>{'common.status'|devblocks_translate|capitalize}:</b></td>
-			<td width="99%" valign="top">
-				<label><input type="radio" name="is_closed" value="0" {if empty($model) || !$model->is_closed}checked="checked"{/if}> {'status.open'|devblocks_translate|capitalize}</label>
-				<label><input type="radio" name="is_closed" value="1" {if !empty($model) && $model->is_closed}checked="checked"{/if}> {'status.closed'|devblocks_translate|capitalize}</label>
-			</td>
-		</tr>
-	</table>
-</fieldset>
-
-{if !empty($custom_fields)}
-<fieldset class="peek">
-	<legend>{'common.custom_fields'|devblocks_translate}</legend>
-	{include file="devblocks:cerberusweb.core::internal/custom_fields/bulk/form.tpl" bulk=false}
-</fieldset>
-{/if}
+<table cellspacing="0" cellpadding="2" border="0" width="98%" style="margin-bottom:10px;">
+	<tr>
+		<td width="1%" nowrap="nowrap" valign="top"><b>Subject:</b></td>
+		<td width="99%" valign="top">
+			<input type="text" name="subject" value="{$model->subject}" style="width:98%;" autofocus="autofocus">
+		</td>
+	</tr>
+	<tr>
+		<td width="1%" nowrap="nowrap" valign="top">{'common.phone'|devblocks_translate|capitalize}:</td>
+		<td width="99%" valign="top">
+			<input type="text" name="phone" value="{$model->phone}" style="width:98%;">
+		</td>
+	</tr>
+	<tr>
+		<td width="1%" nowrap="nowrap" valign="top"><b>{'common.type'|devblocks_translate|capitalize}:</b></td>
+		<td width="99%" valign="top">
+			<label><input type="radio" name="is_outgoing" value="0" {if empty($model) || !$model->is_outgoing}checked="checked"{/if}> Incoming</label>
+			<label><input type="radio" name="is_outgoing" value="1" {if !empty($model) && $model->is_outgoing}checked="checked"{/if}> Outgoing</label>
+		</td>
+	</tr>
+	<tr>
+		<td width="1%" nowrap="nowrap" valign="top"><b>{'common.status'|devblocks_translate|capitalize}:</b></td>
+		<td width="99%" valign="top">
+			<label><input type="radio" name="is_closed" value="0" {if empty($model) || !$model->is_closed}checked="checked"{/if}> {'status.open'|devblocks_translate|capitalize}</label>
+			<label><input type="radio" name="is_closed" value="1" {if !empty($model) && $model->is_closed}checked="checked"{/if}> {'status.closed'|devblocks_translate|capitalize}</label>
+		</td>
+	</tr>
+	
+	{if !empty($custom_fields)}
+	{include file="devblocks:cerberusweb.core::internal/custom_fields/bulk/form.tpl" bulk=false tbody=true}
+	{/if}
+</table>
 
 {include file="devblocks:cerberusweb.core::internal/custom_fieldsets/peek_custom_fieldsets.tpl" context=$peek_context context_id=$model->id}
 
