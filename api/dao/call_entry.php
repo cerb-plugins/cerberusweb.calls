@@ -151,7 +151,7 @@ class DAO_CallEntry extends Cerb_ORMHelper {
 		}
 	}
 	
-	static public function onBeforeUpdateByActor($actor, $fields, $id=null, &$error=null) {
+	static public function onBeforeUpdateByActor($actor, &$fields, $id=null, &$error=null) {
 		$context = CerberusContexts::CONTEXT_CALL;
 		
 		if(!self::_onBeforeUpdateByActorCheckContextPrivs($actor, $context, $id, $error))
