@@ -18,7 +18,7 @@ if(!isset($tables['call_entry'])) {
 	$db->ExecuteMaster($sql);	
 }
 
-list($columns, $indexes) = $db->metaTable('call_entry');
+list(,$indexes) = $db->metaTable('call_entry');
 
 if(!isset($indexes['created_date'])) {
 	$db->ExecuteMaster('ALTER TABLE call_entry ADD INDEX created_date (created_date)');

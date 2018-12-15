@@ -58,6 +58,8 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 				return;
 			}
 			
+			$error = null;
+			
 			if(empty($id)) { // New
 				$fields = array(
 					DAO_CallEntry::CREATED_DATE => time(),
@@ -116,7 +118,7 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 					DAO_Comment::OWNER_CONTEXT => CerberusContexts::CONTEXT_WORKER,
 					DAO_Comment::OWNER_CONTEXT_ID => $active_worker->id,
 				);
-				$comment_id = DAO_Comment::create($fields, $also_notify_worker_ids);
+				DAO_Comment::create($fields, $also_notify_worker_ids);
 			}
 			
 			// Custom field saves
@@ -224,8 +226,6 @@ class PageSection_ProfilesCall extends Extension_PageSection {
 		@$ids = DevblocksPlatform::importGPC($_REQUEST['ids']);
 		@$view_id = DevblocksPlatform::importGPC($_REQUEST['view_id']);
 
-		$active_worker = CerberusApplication::getActiveWorker();
-		
 		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('view_id', $view_id);
 
