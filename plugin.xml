@@ -4,7 +4,7 @@
 	<name>Call Logging</name>
 	<description>This plugin adds a new Call record type for logging incoming and outgoing phone activity.</description>
 	<author>Webgroup Media, LLC.</author>
-	<version>1.8.0</version>
+	<version>1.8.1</version>
 	<link>http://www.cerbweb.com/book/latest/plugins/cerberusweb.calls.html</link>
 	<image>plugin.png</image>
 	
@@ -126,7 +126,7 @@
 		
 		<extension point="devblocks.event">
 			<id>event.macro.call</id>
-			<name>Custom behavior on call</name>
+			<name>Record custom behavior on call</name>
 			<class>
 				<file>api/events/macro/call_macro.php</file>
 				<name>Event_CallMacro</name>
